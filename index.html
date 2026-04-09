@@ -66,7 +66,31 @@
   .year-pill { transition: all .15s; }
   .year-pill.active { background: #f97316 !important; color: #fff !important; border-color: #f97316 !important; }
 
-  /* ===== GOOGLE AUTH SCREEN ===== */
+  /* ===== CRUD DRAWER ===== */
+  #crud-drawer {
+    position: fixed; inset: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: flex-end;
+  }
+  #crud-drawer .drawer-overlay {
+    position: absolute; inset: 0;
+    background: rgba(15,23,42,0.7); backdrop-filter: blur(8px);
+  }
+  #crud-drawer .drawer-panel {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 580px; height: 100vh;
+    background: #fff; overflow-y: auto;
+    box-shadow: -20px 0 60px rgba(0,0,0,0.15);
+    display: flex; flex-direction: column;
+  }
+  .field-locked { background: #f8fafc; cursor: not-allowed; opacity: 0.7; }
+  .star-btn { cursor: pointer; transition: transform 0.15s; }
+  .star-btn:hover { transform: scale(1.2); }
+  .search-result-item { transition: all 0.15s; cursor: pointer; }
+  .search-result-item:hover { background: #fff7ed; border-color: #fb923c; }
+  .step-indicator { transition: all 0.3s; }
+  /* Author confirm card */
+  .author-confirm { animation: slideUp 0.3s ease forwards; }
+  @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
   #auth-screen { background: linear-gradient(135deg, #fefaf6 0%, #fff7ed 100%); }
   .google-btn { transition: all 0.2s; box-shadow: 0 4px 20px rgba(249,115,22,0.2); }
   .google-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(249,115,22,0.35); }
@@ -164,7 +188,7 @@
     <div class="mt-auto pt-8 border-t border-orange-50 space-y-4">
       <!-- User info (shown when logged in via Google) -->
       <div id="user-info" class="hidden items-center gap-3">
-        <img id="user-avatar" src="" class="w-9 h-9 rounded-full object-cover border-2 border-orange-100" />
+        <img id="user-avatar" src="" referrerpolicy="no-referrer" class="w-9 h-9 rounded-full object-cover border-2 border-orange-100" />
         <div class="min-w-0">
           <p id="user-name" class="text-xs font-black text-slate-700 truncate"></p>
           <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Google Drive</p>
@@ -222,11 +246,17 @@
 
     <!-- BOOKS TAB -->
     <div id="tab-books" class="hidden space-y-6 fade-in">
-      <div class="flex flex-wrap gap-3 p-2 bg-white border border-orange-50 rounded-[32px] w-fit shadow-sm">
-        <button data-filter="todos" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all bg-orange-500 text-white shadow-xl" onclick="setFilter('todos')">Todos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-white/20 text-white" id="count-todos">0</span></button>
-        <button data-filter="leido" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('leido')">Leídos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-leido">0</span></button>
-        <button data-filter="pendiente" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('pendiente')">Pendientes <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-pendiente">0</span></button>
-        <button data-filter="wishlist" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('wishlist')">Deseados <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-wishlist">0</span></button>
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap gap-3 p-2 bg-white border border-orange-50 rounded-[32px] w-fit shadow-sm">
+          <button data-filter="todos" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all bg-orange-500 text-white shadow-xl" onclick="setFilter('todos')">Todos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-white/20 text-white" id="count-todos">0</span></button>
+          <button data-filter="leido" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('leido')">Leídos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-leido">0</span></button>
+          <button data-filter="pendiente" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('pendiente')">Pendientes <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-pendiente">0</span></button>
+          <button data-filter="wishlist" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('wishlist')">Deseados <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-wishlist">0</span></button>
+        </div>
+        <button id="btn-add-book" onclick="openAddBook()" class="hidden items-center gap-3 bg-orange-500 hover:bg-orange-600 text-white font-black text-[11px] uppercase tracking-widest px-7 py-4 rounded-[24px] shadow-lg shadow-orange-100 transition-all hover:-translate-y-0.5">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Agregar libro
+        </button>
       </div>
       <!-- Year multi-select filter -->
       <div id="year-filter-wrap" class="hidden items-center gap-3 flex-wrap bg-white border border-orange-50 rounded-[28px] px-6 py-4 w-fit shadow-sm">
@@ -251,6 +281,19 @@
     <div id="modal-left" class="w-full md:w-[38%] bg-slate-100 relative h-72 md:h-auto overflow-hidden"></div>
     <div id="modal-right" class="flex-1 p-10 md:p-16 overflow-y-auto bg-white custom-scrollbar"></div>
   </div>
+</div>
+
+<!-- CRUD DRAWER -->
+<div id="crud-drawer" class="hidden">
+  <div class="drawer-overlay" onclick="closeDrawer()"></div>
+  <div class="drawer-panel custom-scrollbar">
+    <div id="drawer-content"></div>
+  </div>
+</div>
+
+<!-- CHANGE STATUS MODAL -->
+<div id="status-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-xl z-[70] flex items-center justify-center p-6">
+  <div id="status-modal-content" class="bg-white rounded-[48px] shadow-2xl p-12 w-full max-w-md zoom-in"></div>
 </div>
 
 <script>
@@ -890,6 +933,12 @@ function openModal(id, type, pushHistory = true) {
         ${selectedItem.Autor ? authorLinkBtn(selectedItem.Autor) : ''}
         ${selectedItem.ocupacion ? `<span class="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">${icons.penTool} ${selectedItem.ocupacion}</span>` : ''}
         ${wikipediaBtn(wikiTerm)}
+        ${type === 'book' && dataSource === 'google' && (selectedItem.estado === 'wishlist' || selectedItem.estado === 'pendiente') ? `
+          <button onclick="openStatusModal('${selectedItem.libro_id}')"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Cambiar estado
+          </button>` : ''}
       </div>
     </div>
     ${detail}
@@ -1011,11 +1060,768 @@ function onSearch() {
   if (activeTab === 'authors') renderAuthors();
 }
 
-// ===== GOOGLE CONFIG =====
+// ===== CRUD: SHEETS WRITE =====
+
+// Get the next available ID for books (libro_id) or authors (autor_id)
+function getNextId(type) {
+  if (type === 'author') {
+    const nums = authors.map(a => parseInt((a.autor_id||'').replace('A',''))).filter(n => !isNaN(n));
+    const next = nums.length ? Math.max(...nums) + 1 : 1;
+    return 'A' + String(next).padStart(3, '0');
+  } else {
+    const nums = books.map(b => parseInt((b.libro_id||'').replace('L',''))).filter(n => !isNaN(n));
+    const next = nums.length ? Math.max(...nums) + 1 : 1;
+    return 'L' + String(next).padStart(3, '0');
+  }
+}
+
+// Append a row to a Google Sheet
+async function appendRow(sheetId, values) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: [values] })
+  });
+  if (!res.ok) throw new Error(`Sheets append error: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+// Update specific cells in a row by finding it first
+async function updateRow(sheetId, rowIndex, values) {
+  // rowIndex is 0-based data row (add 2 for header + 1-based)
+  const sheetRow = rowIndex + 2;
+  const endCol = String.fromCharCode(65 + values.length - 1);
+  const range = `A${sheetRow}:${endCol}${sheetRow}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ values: [values] })
+  });
+  if (!res.ok) throw new Error(`Sheets update error: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+// Get headers from a sheet to know column order
+async function getSheetHeaders(sheetId) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:ZZ1`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+  const json = await res.json();
+  return (json.values && json.values[0]) ? json.values[0].map(h => String(h).trim()) : [];
+}
+
+// Build an ordered values array from an object based on sheet headers
+function buildRowValues(obj, headers) {
+  return headers.map(h => obj[h] !== undefined ? String(obj[h]) : '');
+}
+
+// ===== CRUD: DRAWER OPEN/CLOSE =====
+function openDrawer(content) {
+  document.getElementById('drawer-content').innerHTML = content;
+  document.getElementById('crud-drawer').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDrawer() {
+  document.getElementById('crud-drawer').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+// ===== CRUD: ADD BOOK FLOW =====
+// Step state
+let addBookState = {};
+
+function openAddBook() {
+  addBookState = {};
+  openDrawer(renderStep1());
+}
+
+function renderStep1() {
+  return `
+    <div class="p-10 space-y-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-3xl font-black text-slate-800 tracking-tighter">Agregar libro</h2>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Paso 1 — Buscar</p>
+        </div>
+        <button onclick="closeDrawer()" class="p-3 rounded-2xl text-slate-300 hover:text-slate-600 hover:bg-slate-50 transition-all">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="relative">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="book-search-input" type="text" placeholder="Título, autor o ISBN..."
+          class="w-full pl-14 pr-5 py-4 rounded-[24px] border-2 border-orange-100 font-bold text-slate-700 focus:border-orange-400 outline-none transition-all"
+          oninput="debounceBookSearch(this.value)"
+          onkeydown="if(event.key==='Enter') searchGoogleBooks(document.getElementById('book-search-input').value)" />
+      </div>
+
+      <div id="book-search-results" class="space-y-3 max-h-[60vh] overflow-y-auto pr-1"></div>
+    </div>`;
+}
+
+let searchTimeout;
+function debounceBookSearch(q) {
+  clearTimeout(searchTimeout);
+  if (q.length < 3) return;
+  searchTimeout = setTimeout(() => searchGoogleBooks(q), 600);
+}
+
+async function searchGoogleBooks(q) {
+  if (!q || q.length < 2) return;
+  const container = document.getElementById('book-search-results');
+  container.innerHTML = `<div class="flex items-center gap-3 text-slate-400 py-4">
+    <svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <span class="font-bold text-sm">Buscando en Google Books...</span>
+  </div>`;
+
+  try {
+    const encoded = encodeURIComponent(q);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encoded}&maxResults=10&langRestrict=&key=`);
+    const data = await res.json();
+    const items = data.items || [];
+
+    if (items.length === 0) {
+      container.innerHTML = `<p class="text-slate-400 font-bold text-sm py-4">No se encontraron resultados para "<em>${q}</em>"</p>`;
+      return;
+    }
+
+    container.innerHTML = items.map((item, i) => {
+      const info = item.volumeInfo || {};
+      const thumb = (info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || '').replace('http://', 'https://');
+      const title = info.title || 'Sin título';
+      const authors = (info.authors || []).join(', ');
+      const year = (info.publishedDate || '').substring(0, 4);
+      const publisher = info.publisher || '';
+      return `
+        <div class="search-result-item flex gap-4 p-4 rounded-[24px] border-2 border-slate-100 bg-white"
+          onclick="selectGoogleBook(${i})" data-idx="${i}">
+          <img src="${thumb || 'https://via.placeholder.com/60x80'}" class="w-12 h-16 object-cover rounded-xl shadow-sm flex-shrink-0" onerror="this.src='https://via.placeholder.com/60x80'"/>
+          <div class="min-w-0">
+            <h4 class="font-black text-slate-800 text-sm leading-tight truncate">${title}</h4>
+            <p class="text-orange-500 font-bold text-xs mt-1">${authors}</p>
+            <p class="text-slate-400 font-bold text-[11px] mt-0.5">${year}${publisher ? ' · ' + publisher : ''}</p>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Store items for later access
+    window._gbooks = items;
+  } catch(err) {
+    container.innerHTML = `<p class="text-rose-400 font-bold text-sm py-4">Error al buscar. Revisá tu conexión.</p>`;
+  }
+}
+
+function selectGoogleBook(idx) {
+  const item = window._gbooks[idx];
+  const info = item.volumeInfo || {};
+
+  // Extract all available data
+  const isbn13 = (info.industryIdentifiers || []).find(i => i.type === 'ISBN_13');
+  const isbn10 = (info.industryIdentifiers || []).find(i => i.type === 'ISBN_10');
+
+  addBookState.googleData = {
+    titulo: info.title || '',
+    Autor: (info.authors || []).join(', '),
+    anio_publicacion: (info.publishedDate || '').substring(0, 4),
+    idioma_original: info.language || '',
+    genero_libro: (info.categories || []).join(', '),
+    resumen: (info.description || '').replace(/<[^>]+>/g, ''),
+    portada_url: (info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || '').replace('http://', 'https://'),
+    ISBN: isbn13 ? isbn13.identifier : (isbn10 ? isbn10.identifier : ''),
+    editorial: info.publisher || '',
+    paginas: info.pageCount ? String(info.pageCount) : '',
+  };
+
+  renderStep2();
+}
+
+function renderStep2() {
+  const d = addBookState.googleData || {};
+
+  const fieldRow = (label, key, locked) => {
+    const val = d[key] || '';
+    const cls = locked && val ? 'field-locked' : '';
+    const disabled = locked && val ? 'disabled' : '';
+    return `
+      <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">${label}${locked && val ? ' <span class="text-orange-400">· de Google Books</span>' : ''}</label>
+        <input type="text" name="${key}" value="${val.replace(/"/g, '&quot;')}"
+          class="w-full px-5 py-3 rounded-[18px] border-2 ${cls ? 'border-slate-100 bg-slate-50' : 'border-orange-100 focus:border-orange-400'} font-bold text-sm text-slate-700 outline-none transition-all ${cls}"
+          ${disabled} />
+      </div>`;
+  };
+
+  const content = `
+    <div class="p-10 space-y-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <button onclick="openAddBook()" class="text-orange-400 hover:text-orange-600 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 mb-2 transition-colors">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            Volver a buscar
+          </button>
+          <h2 class="text-2xl font-black text-slate-800 tracking-tighter">Paso 2 — Datos del libro</h2>
+        </div>
+        <button onclick="closeDrawer()" class="p-3 rounded-2xl text-slate-300 hover:text-slate-600 hover:bg-slate-50 transition-all">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Book preview -->
+      <div class="flex gap-5 p-6 bg-orange-50 rounded-[28px]">
+        <img src="${d.portada_url || 'https://via.placeholder.com/80x110'}" class="w-16 h-24 object-cover rounded-2xl shadow-md flex-shrink-0" onerror="this.src='https://via.placeholder.com/80x110'"/>
+        <div class="min-w-0">
+          <h3 class="font-black text-slate-800 text-lg leading-tight">${d.titulo}</h3>
+          <p class="text-orange-500 font-bold text-sm mt-1">${d.Autor}</p>
+          <p class="text-slate-400 font-bold text-xs mt-1">${d.anio_publicacion}${d.editorial ? ' · ' + d.editorial : ''}</p>
+        </div>
+      </div>
+
+      <form id="add-book-form" class="space-y-5" onsubmit="return false">
+        <div class="grid grid-cols-2 gap-4">
+          ${fieldRow('Título', 'titulo', true)}
+          ${fieldRow('Autor', 'Autor', true)}
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+          ${fieldRow('Año publicación', 'anio_publicacion', true)}
+          ${fieldRow('Idioma original', 'idioma_original', true)}
+          ${fieldRow('ISBN', 'ISBN', true)}
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          ${fieldRow('Género', 'genero_libro', true)}
+          ${fieldRow('Subgénero', 'subgenero_libro', false)}
+        </div>
+        ${fieldRow('URL portada', 'portada_url', true)}
+        <div>
+          <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Sinopsis</label>
+          <textarea name="resumen" rows="3" class="w-full px-5 py-3 rounded-[18px] border-2 border-slate-100 bg-slate-50 font-bold text-sm text-slate-700 outline-none field-locked resize-none" disabled>${d.resumen || ''}</textarea>
+        </div>
+
+        <!-- Estado -->
+        <div>
+          <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Estado *</label>
+          <div class="flex gap-3">
+            ${['leido','pendiente','wishlist'].map(s => `
+              <button type="button" onclick="selectEstado('${s}')"
+                data-estado="${s}"
+                class="estado-btn flex-1 py-3 rounded-[18px] border-2 font-black text-[11px] uppercase tracking-widest transition-all border-slate-100 text-slate-400 hover:border-orange-300">
+                ${s === 'leido' ? '✓ Leído' : s === 'pendiente' ? '📚 Pendiente' : '⭐ Wishlist'}
+              </button>`).join('')}
+          </div>
+        </div>
+
+        <!-- Experiencia de lectura (shown only when leido) -->
+        <div id="experiencia-section" class="hidden space-y-5 p-6 bg-orange-50/60 rounded-[28px] border border-orange-100">
+          <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mi experiencia de lectura</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Mes lectura</label>
+              <select name="Mes_Lectura" class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400">
+                <option value="">-- Mes --</option>
+                ${['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map(m => `<option value="${m}">${m}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Año lectura</label>
+              <input type="number" name="Anio_lectura" min="1900" max="2099" value="${new Date().getFullYear()}"
+                class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400" />
+            </div>
+          </div>
+          <div>
+            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Calificación</label>
+            <div class="flex gap-2" id="star-rating">
+              ${[1,2,3,4,5].map(n => `
+                <button type="button" onclick="setRating(${n})" data-star="${n}"
+                  class="star-btn text-slate-200 hover:text-amber-400 transition-colors">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </button>`).join('')}
+            </div>
+            <input type="hidden" name="Mi_Calificacion" id="rating-value" value="0" />
+          </div>
+          <div class="flex items-center gap-4">
+            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">¿Favorito?</label>
+            <button type="button" id="fav-btn" onclick="toggleFav()"
+              class="flex items-center gap-2 px-5 py-2.5 rounded-[16px] border-2 border-slate-100 font-black text-[11px] uppercase tracking-widest transition-all text-slate-400">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+              No
+            </button>
+            <input type="hidden" name="Es_Favorito" id="fav-value" value="No" />
+          </div>
+          <div>
+            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas personales</label>
+            <textarea name="Notas" rows="3" placeholder="Tus reflexiones sobre el libro..."
+              class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none"></textarea>
+          </div>
+        </div>
+
+        <button type="button" onclick="submitAddBook()"
+          class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all mt-4">
+          Guardar libro
+        </button>
+      </form>
+    </div>`;
+
+  openDrawer(content);
+  addBookState.rating = 0;
+  addBookState.favorito = false;
+}
+
+function selectEstado(estado) {
+  addBookState.estado = estado;
+  document.querySelectorAll('.estado-btn').forEach(btn => {
+    const isActive = btn.dataset.estado === estado;
+    btn.className = `estado-btn flex-1 py-3 rounded-[18px] border-2 font-black text-[11px] uppercase tracking-widest transition-all ${
+      isActive ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-100' : 'border-slate-100 text-slate-400 hover:border-orange-300'
+    }`;
+  });
+  const exp = document.getElementById('experiencia-section');
+  if (estado === 'leido') exp.classList.remove('hidden');
+  else exp.classList.add('hidden');
+}
+
+function setRating(n) {
+  addBookState.rating = n;
+  document.getElementById('rating-value').value = n;
+  document.querySelectorAll('#star-rating .star-btn').forEach(btn => {
+    btn.style.color = parseInt(btn.dataset.star) <= n ? '#f59e0b' : '#e2e8f0';
+  });
+}
+
+function toggleFav() {
+  addBookState.favorito = !addBookState.favorito;
+  document.getElementById('fav-value').value = addBookState.favorito ? 'Sí' : 'No';
+  const btn = document.getElementById('fav-btn');
+  btn.innerHTML = addBookState.favorito
+    ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Sí`
+    : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> No`;
+  btn.className = `flex items-center gap-2 px-5 py-2.5 rounded-[16px] border-2 font-black text-[11px] uppercase tracking-widest transition-all ${
+    addBookState.favorito ? 'bg-rose-500 text-white border-rose-500' : 'border-slate-100 text-slate-400'
+  }`;
+}
+
+async function submitAddBook() {
+  const form = document.getElementById('add-book-form');
+  const formData = new FormData(form);
+  const data = {};
+  for (const [key, val] of formData.entries()) data[key] = val;
+
+  // Also grab non-disabled fields by iterating inputs
+  form.querySelectorAll('input:not([disabled]), textarea:not([disabled]), select').forEach(el => {
+    if (el.name) data[el.name] = el.value;
+  });
+
+  if (!data.titulo) { showToast('⚠ El título es requerido', true); return; }
+  if (!data.Autor)  { showToast('⚠ El autor es requerido', true); return; }
+  if (!addBookState.estado) { showToast('⚠ Seleccioná un estado', true); return; }
+
+  data.estado = addBookState.estado;
+  data.Mi_Calificacion = addBookState.estado === 'leido' ? (addBookState.rating || 0) : '';
+  data.Es_Favorito = addBookState.estado === 'leido' ? (addBookState.favorito ? 'Sí' : 'No') : 'No';
+  if (addBookState.estado !== 'leido') { data.Anio_lectura = ''; data.Mes_Lectura = ''; data.Notas = ''; }
+
+  // Generate new libro_id
+  data.libro_id = getNextId('book');
+
+  // Show saving state
+  showDrawerLoading('Verificando autor...');
+
+  try {
+    // === STEP 1: Check / add author ===
+    const authorName = (data.Autor || '').trim().toLowerCase();
+    const existingAuthor = authors.find(a => (a.nombre||'').trim().toLowerCase() === authorName);
+
+    if (!existingAuthor) {
+      // Search Open Library for author data
+      const authorData = await searchAndConfirmAuthor(data.Autor);
+      if (!authorData) return; // user cancelled or error
+      await saveAuthor(authorData);
+    }
+
+    // === STEP 2: Save book ===
+    showDrawerLoading('Guardando libro en Google Drive...');
+    const headers = await getSheetHeaders(SHEET_ID_BOOKS);
+    const rowValues = buildRowValues(data, headers);
+    await appendRow(SHEET_ID_BOOKS, rowValues);
+
+    // Update local state
+    books.push(processBooks([data])[0]);
+
+    closeDrawer();
+    renderBooks();
+    renderHome();
+    showToast(`✓ "${data.titulo}" agregado correctamente`);
+  } catch(err) {
+    console.error(err);
+    showToast('⚠ Error al guardar. Revisá tu conexión.', true);
+    hideDrawerLoading();
+  }
+}
+
+function showDrawerLoading(msg) {
+  const overlay = document.createElement('div');
+  overlay.id = 'drawer-loading';
+  overlay.style.cssText = 'position:absolute;inset:0;background:rgba(255,255,255,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;border-radius:0';
+  overlay.innerHTML = `
+    <svg class="animate-spin text-orange-500 mb-4" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <p class="font-black text-slate-600 text-sm">${msg}</p>`;
+  document.querySelector('.drawer-panel').style.position = 'relative';
+  document.querySelector('.drawer-panel').appendChild(overlay);
+}
+
+function hideDrawerLoading() {
+  const el = document.getElementById('drawer-loading');
+  if (el) el.remove();
+}
+
+// ===== AUTHOR SEARCH & CONFIRM =====
+async function searchAndConfirmAuthor(authorName) {
+  return new Promise(async (resolve) => {
+    showDrawerLoading(`Buscando "${authorName}" en Open Library...`);
+
+    let olData = null;
+    try {
+      const q = encodeURIComponent(authorName);
+      const res = await fetch(`https://openlibrary.org/search/authors.json?q=${q}&limit=3`);
+      const json = await res.json();
+      const docs = json.docs || [];
+      if (docs.length > 0) {
+        const a = docs[0];
+        const olKey = a.key || '';
+        // Fetch author details
+        let details = {};
+        if (olKey) {
+          try {
+            const detailRes = await fetch(`https://openlibrary.org${olKey}.json`);
+            details = await detailRes.json();
+          } catch(e) {}
+        }
+        const photoId = (a.photos && a.photos[0]) ? a.photos[0] : null;
+        olData = {
+          nombre: a.name || authorName,
+          fecha_nacimiento: a.birth_date || details.birth_date || '',
+          fecha_muerte: a.death_date || details.death_date || '',
+          descripcion: typeof details.bio === 'string' ? details.bio : (details.bio?.value || ''),
+          foto_url: photoId ? `https://covers.openlibrary.org/a/id/${photoId}-L.jpg` : '',
+          openlibrary_key: olKey.replace('/authors/', ''),
+          wikipedia_url: '',
+          autor_vivo: a.death_date ? 'No' : 'Sí',
+        };
+      }
+    } catch(e) { /* silent, will show manual form */ }
+
+    hideDrawerLoading();
+    renderAuthorConfirm(authorName, olData, resolve);
+  });
+}
+
+function renderAuthorConfirm(authorName, olData, resolve) {
+  const d = olData || {};
+
+  const field = (label, key, val, required = false) => `
+    <div>
+      <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">${label}${required ? ' *' : ''}</label>
+      <input type="text" name="${key}" value="${(val||'').replace(/"/g,'&quot;')}"
+        class="w-full px-4 py-2.5 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all" />
+    </div>`;
+
+  const content = `
+    <div class="p-10 space-y-8">
+      <div>
+        <p class="text-orange-500 font-black text-[10px] uppercase tracking-widest mb-1">Nuevo autor detectado</p>
+        <h2 class="text-2xl font-black text-slate-800 tracking-tighter">${authorName}</h2>
+        <p class="text-slate-400 font-bold text-sm mt-1">${olData ? 'Datos encontrados en Open Library. Completá los campos vacíos.' : 'No se encontraron datos en Open Library. Completá manualmente.'}</p>
+      </div>
+
+      ${olData && olData.foto_url ? `
+        <div class="flex items-center gap-5 p-5 bg-orange-50 rounded-[24px]">
+          <img src="${olData.foto_url}" class="w-16 h-16 rounded-full object-cover border-4 border-white shadow-md" onerror="this.style.display='none'"/>
+          <div>
+            <p class="font-black text-slate-800">${d.nombre || authorName}</p>
+            <p class="text-slate-400 font-bold text-xs mt-1">${d.fecha_nacimiento || '?'} — ${d.fecha_muerte || (d.autor_vivo === 'No' ? '?' : 'Actual')}</p>
+          </div>
+        </div>` : ''}
+
+      <form id="author-confirm-form" class="space-y-4 author-confirm" onsubmit="return false">
+        <div class="grid grid-cols-2 gap-3">
+          ${field('Nombre', 'nombre', d.nombre || authorName, true)}
+          ${field('País', 'pais', d.pais || '', true)}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          ${field('Continente', 'continente', d.continente || '')}
+          ${field('Nacionalidad', 'nacionalidad', d.nacionalidad || '')}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          ${field('Fecha nacimiento', 'fecha_nacimiento', d.fecha_nacimiento || '')}
+          ${field('Fecha muerte', 'fecha_muerte', d.fecha_muerte || '')}
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          ${field('Género autor', 'genero_autor', '')}
+          ${field('Autor vivo', 'autor_vivo', d.autor_vivo || 'Sí')}
+        </div>
+        ${field('Descripción', 'descripcion', d.descripcion || '')}
+        ${field('URL foto', 'foto_url', d.foto_url || '')}
+        ${field('Géneros literarios', 'generos_literarios', '')}
+        ${field('Idioma principal', 'idioma_principal', '')}
+        ${field('Ocupación', 'ocupacion', '')}
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="confirmAuthorCancel()"
+            class="flex-1 py-4 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">
+            Cancelar
+          </button>
+          <button type="button" onclick="confirmAuthorSave()"
+            class="flex-1 py-4 rounded-[20px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm shadow-lg shadow-orange-100 transition-all">
+            Confirmar autor
+          </button>
+        </div>
+      </form>
+    </div>`;
+
+  openDrawer(content);
+  window._authorConfirmResolve = resolve;
+}
+
+function confirmAuthorCancel() {
+  if (window._authorConfirmResolve) window._authorConfirmResolve(null);
+  closeDrawer();
+}
+
+async function confirmAuthorSave() {
+  const form = document.getElementById('author-confirm-form');
+  const data = {};
+  form.querySelectorAll('input, textarea').forEach(el => { if (el.name) data[el.name] = el.value; });
+
+  if (!data.nombre) { showToast('⚠ El nombre es requerido', true); return; }
+  if (!data.pais)   { showToast('⚠ El país es requerido', true); return; }
+
+  data.autor_id = getNextId('author');
+  data.Es_Favorito = 'No';
+  data.edad = '';
+  data.siglo = '';
+  data.epoca = '';
+  data.region = '';
+  data.premios_importantes = '';
+  data.numero_obras = '';
+  data['principales_obras (top 3–5)'] = '';
+  data.categorias_wikipedia = '';
+  data.wikipedia_url = '';
+  data.wikidata_id = '';
+
+  if (window._authorConfirmResolve) window._authorConfirmResolve(data);
+  window._pendingAuthorData = data;
+}
+
+async function saveAuthor(authorData) {
+  showDrawerLoading('Guardando autor en Google Drive...');
+  const headers = await getSheetHeaders(SHEET_ID_AUTHORS);
+  const rowValues = buildRowValues(authorData, headers);
+  await appendRow(SHEET_ID_AUTHORS, rowValues);
+  authors.push(processAuthors([authorData])[0]);
+  hideDrawerLoading();
+}
+
+// ===== CHANGE STATUS =====
+function openStatusModal(bookId) {
+  const book = books.find(b => b.libro_id === bookId);
+  if (!book) return;
+
+  const currentEstado = book.estado || 'wishlist';
+  const transitions = {
+    'wishlist': ['pendiente', 'leido'],
+    'pendiente': ['leido'],
+    'leido': []
+  };
+  const available = transitions[currentEstado] || [];
+
+  if (available.length === 0) {
+    showToast('Este libro ya está en su estado final (Leído)');
+    return;
+  }
+
+  const labels = { pendiente: '📚 Pendiente', leido: '✓ Leído' };
+  const modal = document.getElementById('status-modal');
+  document.getElementById('status-modal-content').innerHTML = `
+    <div class="space-y-8">
+      <div>
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Cambiar estado</p>
+        <h3 class="text-2xl font-black text-slate-800 tracking-tighter leading-tight">${book.titulo || ''}</h3>
+        <p class="text-orange-500 font-bold text-sm mt-1">${book.Autor || ''}</p>
+      </div>
+      <div>
+        <p class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3">Estado actual: <span class="text-slate-500">${currentEstado}</span></p>
+        <div class="space-y-3">
+          ${available.map(s => `
+            <button onclick="applyStatusChange('${bookId}','${s}')"
+              class="w-full py-4 rounded-[20px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-100 transition-all">
+              Cambiar a ${labels[s]}
+            </button>`).join('')}
+        </div>
+      </div>
+      <button onclick="closeStatusModal()" class="w-full py-3 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">
+        Cancelar
+      </button>
+    </div>`;
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeStatusModal() {
+  document.getElementById('status-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+async function applyStatusChange(bookId, newEstado) {
+  if (newEstado === 'leido') {
+    // Need to collect reading experience first
+    closeStatusModal();
+    openReadingExperienceForm(bookId, newEstado);
+  } else {
+    // Just update status directly
+    await saveStatusChange(bookId, newEstado, {});
+  }
+}
+
+function openReadingExperienceForm(bookId, newEstado) {
+  const book = books.find(b => b.libro_id === bookId);
+  openDrawer(`
+    <div class="p-10 space-y-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-orange-500 font-black text-[10px] uppercase tracking-widest mb-1">Registrar lectura</p>
+          <h2 class="text-2xl font-black text-slate-800 tracking-tighter leading-tight">${book?.titulo || ''}</h2>
+        </div>
+        <button onclick="closeDrawer()" class="p-3 rounded-2xl text-slate-300 hover:text-slate-600 transition-all">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="exp-form" class="space-y-6" onsubmit="return false">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Mes lectura</label>
+            <select name="Mes_Lectura" class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400">
+              <option value="">-- Mes --</option>
+              ${['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'].map(m => `<option value="${m}">${m}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Año lectura</label>
+            <input type="number" name="Anio_lectura" min="1900" max="2099" value="${new Date().getFullYear()}"
+              class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400" />
+          </div>
+        </div>
+        <div>
+          <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Calificación</label>
+          <div class="flex gap-2" id="exp-star-rating">
+            ${[1,2,3,4,5].map(n => `
+              <button type="button" onclick="setExpRating(${n})" data-star="${n}"
+                class="star-btn text-slate-200 hover:text-amber-400 transition-colors">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </button>`).join('')}
+          </div>
+          <input type="hidden" name="Mi_Calificacion" id="exp-rating-value" value="0" />
+        </div>
+        <div class="flex items-center gap-4">
+          <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">¿Favorito?</label>
+          <button type="button" id="exp-fav-btn" onclick="toggleExpFav()"
+            class="flex items-center gap-2 px-5 py-2.5 rounded-[16px] border-2 border-slate-100 font-black text-[11px] uppercase tracking-widest transition-all text-slate-400">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            No
+          </button>
+          <input type="hidden" name="Es_Favorito" id="exp-fav-value" value="No" />
+        </div>
+        <div>
+          <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas personales</label>
+          <textarea name="Notas" rows="4" placeholder="Tus reflexiones sobre el libro..."
+            class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none"></textarea>
+        </div>
+        <button type="button" onclick="submitReadingExp('${bookId}')"
+          class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all">
+          Guardar lectura
+        </button>
+      </form>
+    </div>`);
+
+  window._expFav = false;
+  window._expRating = 0;
+}
+
+function setExpRating(n) {
+  window._expRating = n;
+  document.getElementById('exp-rating-value').value = n;
+  document.querySelectorAll('#exp-star-rating .star-btn').forEach(btn => {
+    btn.style.color = parseInt(btn.dataset.star) <= n ? '#f59e0b' : '#e2e8f0';
+  });
+}
+
+function toggleExpFav() {
+  window._expFav = !window._expFav;
+  document.getElementById('exp-fav-value').value = window._expFav ? 'Sí' : 'No';
+  const btn = document.getElementById('exp-fav-btn');
+  btn.innerHTML = window._expFav
+    ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Sí`
+    : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> No`;
+  btn.className = `flex items-center gap-2 px-5 py-2.5 rounded-[16px] border-2 font-black text-[11px] uppercase tracking-widest transition-all ${
+    window._expFav ? 'bg-rose-500 text-white border-rose-500' : 'border-slate-100 text-slate-400'
+  }`;
+}
+
+async function submitReadingExp(bookId) {
+  const form = document.getElementById('exp-form');
+  const data = {};
+  form.querySelectorAll('input, textarea, select').forEach(el => { if (el.name) data[el.name] = el.value; });
+  data.Mi_Calificacion = window._expRating || 0;
+  data.Es_Favorito = window._expFav ? 'Sí' : 'No';
+  await saveStatusChange(bookId, 'leido', data);
+}
+
+async function saveStatusChange(bookId, newEstado, extraData) {
+  const bookIndex = books.findIndex(b => b.libro_id === bookId);
+  if (bookIndex === -1) return;
+
+  showDrawerLoading('Guardando cambios en Google Drive...');
+
+  try {
+    const headers = await getSheetHeaders(SHEET_ID_BOOKS);
+    const updatedBook = { ...books[bookIndex], estado: newEstado, ...extraData };
+    const rowValues = buildRowValues(updatedBook, headers);
+    await updateRow(SHEET_ID_BOOKS, bookIndex, rowValues);
+
+    // Update local state
+    books[bookIndex] = processBooks([updatedBook])[0];
+
+    closeDrawer();
+    closeStatusModal();
+    closeModal();
+    renderBooks();
+    renderHome();
+    showToast(`✓ Estado actualizado a "${newEstado}"`);
+  } catch(err) {
+    console.error(err);
+    showToast('⚠ Error al actualizar. Revisá tu conexión.', true);
+    hideDrawerLoading();
+  }
+}
+
+// Show/hide + button based on data source
+function updateCrudVisibility() {
+  const btn = document.getElementById('btn-add-book');
+  if (!btn) return;
+  if (dataSource === 'google') {
+    btn.classList.remove('hidden');
+    btn.classList.add('flex');
+  } else {
+    btn.classList.add('hidden');
+    btn.classList.remove('flex');
+  }
+}
+
 const GOOGLE_CLIENT_ID = '859059309250-pbjkpvfdl1kt7mp2da8adi6hk38nqgd4.apps.googleusercontent.com';
 const SHEET_ID_BOOKS   = '1B-JDvogcQSOmDdB00J9CHFYfDo3Di6WNssqsCilJbSo';
 const SHEET_ID_AUTHORS = '1P4snFOyh6V7m9eQO8xHQXNWVxYEDXUxY9QyezYaTOBQ';
-const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
 let googleAccessToken = null;
 let dataSource = 'manual';
@@ -1194,6 +2000,7 @@ function startApp(fromGoogle = false) {
     document.getElementById('btn-reload').classList.add('hidden');
     showToast('✓ Conectado a Google Drive');
   }
+  updateCrudVisibility();
   renderHome();
 }
 
