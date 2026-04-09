@@ -226,11 +226,13 @@
         <button onclick="clearYearFilter()" class="text-[10px] font-black text-orange-400 hover:text-orange-600 uppercase tracking-widest transition-colors ml-1">✕ Limpiar</button>
       </div>
       <div id="books-grid"></div>
+      <div id="books-pagination" class="flex items-center justify-between mt-8"></div>
     </div>
 
     <!-- AUTHORS TAB -->
     <div id="tab-authors" style="display:none" class="fade-in">
       <div id="authors-grid"></div>
+      <div id="authors-pagination" class="flex items-center justify-between mt-8"></div>
     </div>
   </main>
 </div>
@@ -272,6 +274,8 @@ let searchTerm = '', bookFilter = 'todos', selectedYears = new Set();
 let selectedItem = null, modalType = null, modalHistory = [];
 let googleAccessToken = null, dataSource = 'manual';
 let addBookState = {}, _expFav = false, _expRating = 0;
+// Pagination
+let bookPage = 1, authorPage = 1, pageSize = 20;
 
 // ===== SHOW/HIDE HELPERS (CSS-controlled) =====
 function show(id, displayType = 'flex') { const el = document.getElementById(id); if(el) el.style.display = displayType; }
@@ -687,6 +691,36 @@ function renderHome() {
   }
 }
 
+// ===== PAGINATION HELPER =====
+function pageSizeSelector(current, onchange) {
+  return `<div class="flex items-center gap-2">
+    <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Mostrar:</span>
+    ${[20,50,'todos'].map(n=>`<button onclick="${onchange}(${n==='todos'?'null':n})"
+      class="px-4 py-2 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${(n==='todos'&&current===null)||(n===current)?'bg-orange-500 text-white shadow-md':'bg-white border border-orange-100 text-slate-400 hover:border-orange-300'}">
+      ${n}
+    </button>`).join('')}
+  </div>`;
+}
+
+function paginationControls(page, totalPages, onPrev, onNext) {
+  if (totalPages <= 1) return '';
+  return `<div class="flex items-center gap-3">
+    <button onclick="${onPrev}()" ${page<=1?'disabled style="opacity:0.3;cursor:not-allowed"':''} class="px-5 py-2.5 rounded-[16px] bg-white border border-orange-100 text-slate-500 font-black text-[11px] hover:border-orange-400 transition-all flex items-center gap-2">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg> Anterior
+    </button>
+    <span class="text-[11px] font-black text-slate-400 uppercase tracking-widest">${page} / ${totalPages}</span>
+    <button onclick="${onNext}()" ${page>=totalPages?'disabled style="opacity:0.3;cursor:not-allowed"':''} class="px-5 py-2.5 rounded-[16px] bg-white border border-orange-100 text-slate-500 font-black text-[11px] hover:border-orange-400 transition-all flex items-center gap-2">
+      Siguiente <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>`;
+}
+
+function setBookPageSize(n) { pageSize = n; bookPage = 1; authorPage = 1; renderBooks(); if(activeTab==='authors') renderAuthors(); }
+function bookPrev() { if(bookPage>1){bookPage--;renderBooks();} }
+function bookNext() { bookPage++;renderBooks(); }
+function authorPrev() { if(authorPage>1){authorPage--;renderAuthors();} }
+function authorNext() { authorPage++;renderAuthors(); }
+
 // ===== RENDER BOOKS =====
 function getFilteredBooks() {
   const s = searchTerm.toLowerCase();
@@ -705,10 +739,17 @@ function renderBooks() {
   document.getElementById('count-pendiente').textContent = s.totalPendientes;
   document.getElementById('count-wishlist').textContent = s.totalWishlist;
   renderYearFilterPills();
+
+  // Pagination
+  const total = f.length;
+  const paged = pageSize === null ? f : f.slice((bookPage-1)*pageSize, bookPage*pageSize);
+  const totalPages = pageSize === null ? 1 : Math.ceil(total / pageSize);
+  if (bookPage > totalPages) bookPage = Math.max(1, totalPages);
+
   const g = document.getElementById('books-grid');
   if (viewMode==='grid') {
     g.className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12';
-    g.innerHTML=f.map(b=>`<div onclick="openModal('${b.libro_id}','book')" class="bg-white p-6 rounded-[50px] border border-orange-50 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative">
+    g.innerHTML=paged.map(b=>`<div onclick="openModal('${b.libro_id}','book')" class="bg-white p-6 rounded-[50px] border border-orange-50 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative">
       ${b.favorite?`<div class="absolute top-10 left-10 z-10 bg-rose-500 text-white p-3 rounded-full shadow-lg border-2 border-white">${icons.heartFill}</div>`:''}
       <div class="h-80 rounded-[40px] overflow-hidden mb-8 relative shadow-lg">
         <img src="${b.portada_url||''}" class="w-full h-full object-cover transition-transform duration-1000" onerror="this.src='https://via.placeholder.com/300x450'" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"/>
@@ -721,7 +762,7 @@ function renderBooks() {
       </div></div>`).join('');
   } else {
     g.className='space-y-6';
-    g.innerHTML=f.map(b=>`<div onclick="openModal('${b.libro_id}','book')" class="bg-white p-5 pr-10 rounded-[32px] border border-orange-50 shadow-sm flex items-center gap-8 cursor-pointer hover:bg-orange-50 transition-all group">
+    g.innerHTML=paged.map(b=>`<div onclick="openModal('${b.libro_id}','book')" class="bg-white p-5 pr-10 rounded-[32px] border border-orange-50 shadow-sm flex items-center gap-8 cursor-pointer hover:bg-orange-50 transition-all group">
       <div class="relative">
         <img src="${b.portada_url||''}" class="w-16 h-24 object-cover rounded-2xl shadow-md" onerror="this.src='https://via.placeholder.com/60x80'"/>
         ${b.favorite?`<div class="absolute -top-2 -left-2 bg-rose-500 text-white p-1.5 rounded-full shadow-md border-2 border-white">${icons.heartFill}</div>`:''}
@@ -738,6 +779,15 @@ function renderBooks() {
       <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">${icons.eye}</div>
     </div>`).join('');
   }
+
+  // Render pagination bar
+  const pg = document.getElementById('books-pagination');
+  pg.innerHTML = `
+    <div class="flex items-center gap-6 flex-wrap">
+      ${pageSizeSelector(pageSize, 'setBookPageSize')}
+      ${total > 0 ? `<span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">${pageSize===null?total:`${Math.min((bookPage-1)*pageSize+1,total)}–${Math.min(bookPage*pageSize,total)} de ${total}`} libros</span>` : ''}
+    </div>
+    ${paginationControls(bookPage, totalPages, 'bookPrev', 'bookNext')}`;
 }
 
 // ===== YEAR FILTER =====
@@ -757,10 +807,17 @@ function renderYearFilterPills() {
 function renderAuthors() {
   const s = searchTerm.toLowerCase();
   const f = authors.filter(a=>(a.nombre||'').toLowerCase().includes(s));
+
+  // Pagination
+  const total = f.length;
+  const paged = pageSize === null ? f : f.slice((authorPage-1)*pageSize, authorPage*pageSize);
+  const totalPages = pageSize === null ? 1 : Math.ceil(total / pageSize);
+  if (authorPage > totalPages) authorPage = Math.max(1, totalPages);
+
   const g = document.getElementById('authors-grid');
   if (viewMode==='grid') {
     g.className='grid grid-cols-2 lg:grid-cols-4 gap-12';
-    g.innerHTML=f.map(a=>{
+    g.innerHTML=paged.map(a=>{
       const bc=books.filter(b=>(b.Autor||'').trim().toLowerCase()===(a.nombre||'').trim().toLowerCase()).length;
       const age=calculateAge(a.fecha_nacimiento,a.fecha_muerte);
       return `<div onclick="openModal('${a.autor_id}','author')" class="bg-white p-10 rounded-[60px] border border-orange-50 shadow-sm hover:shadow-2xl transition-all cursor-pointer text-center group relative overflow-hidden">
@@ -780,7 +837,7 @@ function renderAuthors() {
     }).join('');
   } else {
     g.className='space-y-6';
-    g.innerHTML=f.map(a=>{
+    g.innerHTML=paged.map(a=>{
       const bc=books.filter(b=>(b.Autor||'').trim().toLowerCase()===(a.nombre||'').trim().toLowerCase()).length;
       return `<div onclick="openModal('${a.autor_id}','author')" class="bg-white p-6 pr-12 rounded-[32px] border border-orange-50 shadow-sm flex items-center gap-8 cursor-pointer hover:bg-orange-50 transition-all">
         <div class="relative"><img src="${a.foto_url||''}" class="w-16 h-16 rounded-full object-cover shadow-lg" referrerpolicy="no-referrer" onerror="this.src='https://via.placeholder.com/60'" style="${a.isDead?'filter:grayscale(0.4)':''}"/>
@@ -792,6 +849,15 @@ function renderAuthors() {
       </div>`;
     }).join('');
   }
+
+  // Render pagination bar
+  const pg = document.getElementById('authors-pagination');
+  pg.innerHTML = `
+    <div class="flex items-center gap-6 flex-wrap">
+      ${pageSizeSelector(pageSize, 'setBookPageSize')}
+      ${total > 0 ? `<span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">${pageSize===null?total:`${Math.min((authorPage-1)*pageSize+1,total)}–${Math.min(authorPage*pageSize,total)} de ${total}`} autores</span>` : ''}
+    </div>
+    ${paginationControls(authorPage, totalPages, 'authorPrev', 'authorNext')}`;
 }
 
 // ===== MODAL =====
@@ -959,7 +1025,7 @@ function setView(mode) {
   if(activeTab==='authors') renderAuthors();
 }
 function setFilter(f) {
-  bookFilter=f;
+  bookFilter=f; bookPage=1;
   if(f!=='leido'&&f!=='todos') selectedYears.clear();
   document.querySelectorAll('.pill-filter').forEach(btn=>{
     const a=btn.dataset.filter===f;
@@ -969,7 +1035,7 @@ function setFilter(f) {
   });
   renderBooks();
 }
-function onSearch() { searchTerm=document.getElementById('search-input').value; if(activeTab==='books')renderBooks(); if(activeTab==='authors')renderAuthors(); }
+function onSearch() { searchTerm=document.getElementById('search-input').value; bookPage=1; authorPage=1; if(activeTab==='books')renderBooks(); if(activeTab==='authors')renderAuthors(); }
 
 // ===== SHEETS WRITE =====
 function getNextId(type) {
@@ -982,12 +1048,40 @@ async function appendRow(sheetId,values) {
   if(!res.ok) throw new Error(`Append error ${res.status}: ${await res.text()}`);
   return res.json();
 }
-async function updateRow(sheetId,rowIndex,values) {
-  const row=rowIndex+2;const endCol=String.fromCharCode(65+values.length-1);
-  const range=`A${row}:${endCol}${row}`;
-  const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?valueInputOption=USER_ENTERED`;
-  const res=await fetch(url,{method:'PUT',headers:{Authorization:`Bearer ${googleAccessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:[values]})});
-  if(!res.ok) throw new Error(`Update error ${res.status}: ${await res.text()}`);
+
+// Find real row number in Sheet by matching libro_id in column A (or wherever it is)
+async function findRowById(sheetId, idValue, idColumn = 'A') {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${idColumn}:${idColumn}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+  if (!res.ok) throw new Error(`FindRow error ${res.status}`);
+  const json = await res.json();
+  const rows = json.values || [];
+  // rows[0] is header, data starts at rows[1] → sheet row 2
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === idValue) return i + 1; // 1-based sheet row number
+  }
+  return -1;
+}
+
+// Find which column contains libro_id in the headers
+async function getIdColumnLetter(sheetId, idFieldName) {
+  const headers = await getSheetHeaders(sheetId);
+  const idx = headers.findIndex(h => h === idFieldName);
+  if (idx === -1) return 'A'; // fallback to first column
+  return String.fromCharCode(65 + idx);
+}
+
+async function updateRowById(sheetId, idFieldName, idValue, values) {
+  // Find the column where the ID lives
+  const idCol = await getIdColumnLetter(sheetId, idFieldName);
+  // Find which sheet row has that ID
+  const sheetRow = await findRowById(sheetId, idValue, idCol);
+  if (sheetRow === -1) throw new Error(`Row with ${idFieldName}=${idValue} not found in Sheet`);
+  const endCol = String.fromCharCode(65 + values.length - 1);
+  const range = `A${sheetRow}:${endCol}${sheetRow}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?valueInputOption=USER_ENTERED`;
+  const res = await fetch(url, { method: 'PUT', headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [values] }) });
+  if (!res.ok) throw new Error(`Update error ${res.status}: ${await res.text()}`);
   return res.json();
 }
 async function getSheetHeaders(sheetId) {
@@ -1336,12 +1430,14 @@ async function saveStatusChange(bookId,newEstado,extraData) {
   try {
     const headers=await getSheetHeaders(SHEET_ID_BOOKS);
     const updated={...books[idx],estado:newEstado,...extraData};
-    await updateRow(SHEET_ID_BOOKS,idx,buildRowValues(updated,headers));
+    const rowValues=buildRowValues(updated,headers);
+    // Use ID-based lookup to find the real sheet row
+    await updateRowById(SHEET_ID_BOOKS,'libro_id',bookId,rowValues);
     books[idx]=processBooks([updated])[0];
     closeDrawer();closeStatusModal();closeModal();
     renderBooks();renderHome();
     showToast(`✓ Estado actualizado a "${newEstado}"`);
-  } catch(err){console.error(err);showToast('⚠ Error al actualizar.',true);hideDrawerLoading();}
+  } catch(err){console.error(err);showToast('⚠ Error al actualizar: '+err.message,true);hideDrawerLoading();}
 }
 </script>
 </body>
