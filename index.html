@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mi Bitácora de Lecturas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+  * { font-family: 'Inter', sans-serif; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #fef3e2; border-radius: 8px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #fb923c; border-radius: 8px; }
+  .animate-spin { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .animate-pulse { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+  .fade-in { animation: fadeIn 0.5s ease forwards; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  .zoom-in { animation: zoomIn 0.3s ease forwards; }
+  @keyframes zoomIn { from { opacity:0; transform:scale(0.95); } to { opacity:1; transform:scale(1); } }
+  .group:hover .group-hover\:opacity-100 { opacity:1; }
+  .group:hover .group-hover\:scale-110 { transform:scale(1.1); }
+  .group:hover .group-hover\:text-orange-500 { color:#f97316; }
+  .group:hover .group-hover\:bg-orange-500 { background:#f97316; }
+  .group:hover .group-hover\:text-white { color:#fff; }
+  .group:hover .group-hover\:rotate-6 { transform:rotate(6deg); }
+  .group:hover .group-hover\:shadow-xl { box-shadow:0 20px 25px -5px rgba(0,0,0,.1),0 8px 10px -6px rgba(0,0,0,.1); }
+  .group:hover .group-hover\:-translate-y-1 { transform:translateY(-4px); }
+  .group:hover .group-hover\:opacity-40 { opacity:.4; }
+  .group:hover .group-hover\:bg-white { background:#fff; }
+  .group:hover .group-hover\:border-orange-200 { border-color:#fed7aa; }
+  .group:hover .group-hover\:bg-orange-50 { background:#fff7ed; }
+  .group:hover .group-hover\:text-orange-600 { color:#ea580c; }
+  .group:hover .group-hover\:text-black { color:#000; }
+  input:focus { outline:none; box-shadow:0 0 0 4px #ffedd5; }
+  .snap-start { scroll-snap-align: start; }
+  .snap-x { scroll-snap-type: x mandatory; }
+
+  /* ===== TOOLTIP ===== */
+  .tooltip-wrap { position: relative; display: inline-block; max-width: 100%; }
+  .tooltip-wrap .tooltip-text {
+    visibility: hidden; opacity: 0;
+    background: #1e293b; color: #fff;
+    text-align: left; border-radius: 12px;
+    padding: 8px 14px; font-size: 11px; font-weight: 700;
+    position: absolute; z-index: 200; bottom: 130%; left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap; max-width: 280px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.22);
+    transition: opacity 0.18s;
+    pointer-events: none;
+  }
+  .tooltip-wrap .tooltip-text::after {
+    content: ''; position: absolute; top: 100%; left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: #1e293b;
+  }
+  .tooltip-wrap:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+  /* ===== YEAR FILTER PILLS ===== */
+  .year-pill { transition: all .15s; }
+  .year-pill.active { background: #f97316 !important; color: #fff !important; border-color: #f97316 !important; }
+
+  /* ===== GOOGLE AUTH SCREEN ===== */
+  #auth-screen { background: linear-gradient(135deg, #fefaf6 0%, #fff7ed 100%); }
+  .google-btn { transition: all 0.2s; box-shadow: 0 4px 20px rgba(249,115,22,0.2); }
+  .google-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(249,115,22,0.35); }
+  .sync-badge { animation: syncPulse 2s ease-in-out infinite; }
+  @keyframes syncPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.7;transform:scale(0.97)} }
+</style>
+</head>
+<body class="bg-[#fefaf6] text-slate-900 min-h-screen">
+
+<!-- AUTH / INICIO SCREEN -->
+<div id="auth-screen" class="min-h-screen flex items-center justify-center p-8">
+  <div class="max-w-lg w-full text-center">
+    <!-- Logo -->
+    <div class="flex items-center justify-center gap-4 mb-12">
+      <div class="bg-orange-500 p-4 rounded-[28px] text-white shadow-2xl shadow-orange-200">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <div class="text-left">
+        <h1 class="text-4xl font-black text-slate-800 tracking-tighter">MIS LECTURAS</h1>
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Bitácora literaria</p>
+      </div>
+    </div>
+
+    <!-- Card principal -->
+    <div class="bg-white rounded-[48px] p-12 shadow-2xl border border-orange-50 mb-8">
+      <!-- Botón Google -->
+      <button id="btn-google-signin" onclick="signInWithGoogle()"
+        class="google-btn w-full flex items-center justify-center gap-4 bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 px-8 rounded-[24px] mb-8">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="white" opacity="0.9"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="white" opacity="0.8"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="white" opacity="0.7"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="white" opacity="0.95"/></svg>
+        Continuar con Google
+      </button>
+
+      <div class="flex items-center gap-4 mb-8">
+        <div class="flex-1 h-px bg-slate-100"></div>
+        <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">o cargá manualmente</span>
+        <div class="flex-1 h-px bg-slate-100"></div>
+      </div>
+
+      <!-- Carga manual -->
+      <div class="grid grid-cols-2 gap-4">
+        <label id="btn-books" class="flex flex-col items-center gap-3 p-6 rounded-[32px] border-2 border-dashed cursor-pointer transition-all bg-slate-50 border-slate-100 hover:border-orange-300 hover:bg-orange-50">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-300"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Libros CSV</span>
+          <input type="file" accept=".csv" id="file-books" class="hidden" />
+        </label>
+        <label id="btn-authors" class="flex flex-col items-center gap-3 p-6 rounded-[32px] border-2 border-dashed cursor-pointer transition-all bg-slate-50 border-slate-100 hover:border-orange-300 hover:bg-orange-50">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-300"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Autores CSV</span>
+          <input type="file" accept=".csv" id="file-authors" class="hidden" />
+        </label>
+      </div>
+    </div>
+
+    <!-- Info badge -->
+    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center justify-center gap-2">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Conexión segura · Solo lectura · Tus datos en tu Drive
+    </p>
+  </div>
+</div>
+
+<!-- LOADING SCREEN (durante sync con Google) -->
+<div id="loading-screen" class="hidden min-h-screen flex flex-col items-center justify-center bg-[#fefaf6] text-slate-800">
+  <svg class="animate-spin text-orange-500 mb-8" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+  </svg>
+  <h2 class="text-2xl font-black tracking-tighter uppercase">Sincronizando con Drive</h2>
+  <p id="loading-msg" class="text-slate-400 font-bold mt-3 animate-pulse">Conectando con Google Sheets...</p>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="hidden flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-80 bg-white border-r border-orange-50 p-10 flex flex-col gap-12 sticky top-0 h-screen shadow-[10px_0_30px_rgba(0,0,0,0.02)]">
+    <div class="flex items-center gap-4 text-orange-600 font-black text-2xl tracking-tight">
+      <div class="bg-orange-500 p-2.5 rounded-2xl text-white shadow-lg shadow-orange-200">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      </div>
+      <span>MIS LECTURAS</span>
+    </div>
+    <nav class="flex flex-col gap-3">
+      <button data-tab="home" class="sidebar-link flex items-center gap-5 p-5 rounded-[28px] font-black transition-all group bg-orange-500 text-white shadow-2xl shadow-orange-100">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="text-sm tracking-tight">Mi Rincón</span>
+      </button>
+      <button data-tab="books" class="sidebar-link flex items-center gap-5 p-5 rounded-[28px] font-black transition-all group text-slate-400 hover:bg-orange-50 hover:text-orange-600">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="text-sm tracking-tight">Biblioteca</span>
+      </button>
+      <button data-tab="authors" class="sidebar-link flex items-center gap-5 p-5 rounded-[28px] font-black transition-all group text-slate-400 hover:bg-orange-50 hover:text-orange-600">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="text-sm tracking-tight">Mis Autores</span>
+      </button>
+    </nav>
+    <div class="mt-auto pt-8 border-t border-orange-50 space-y-4">
+      <!-- User info (shown when logged in via Google) -->
+      <div id="user-info" class="hidden items-center gap-3">
+        <img id="user-avatar" src="" class="w-9 h-9 rounded-full object-cover border-2 border-orange-100" />
+        <div class="min-w-0">
+          <p id="user-name" class="text-xs font-black text-slate-700 truncate"></p>
+          <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Google Drive</p>
+        </div>
+      </div>
+      <button id="btn-sync" onclick="syncFromDrive()" class="hidden items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-orange-500 transition-all">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Sincronizar Drive
+      </button>
+      <button onclick="signOut()" id="btn-signout" class="hidden items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-rose-500 transition-all">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+      <!-- Fallback for manual mode -->
+      <button onclick="location.reload()" id="btn-reload" class="flex items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-orange-500 transition-all">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Recargar
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-16 max-w-7xl mx-auto w-full">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
+      <div>
+        <h1 id="page-title" class="text-5xl font-black text-slate-800 tracking-tight mb-2 uppercase">Resumen</h1>
+        <p id="page-subtitle" class="text-slate-400 font-black text-[10px] uppercase tracking-[0.3em] flex items-center gap-3">
+          <span class="w-12 h-1 bg-orange-200 rounded-full inline-block"></span>
+          Tu universo literario en cifras
+        </p>
+      </div>
+      <div id="header-controls" class="hidden items-center gap-4 w-full md:w-auto flex">
+        <div class="flex bg-white p-1.5 rounded-3xl shadow-sm border border-orange-50">
+          <button id="btn-grid" onclick="setView('grid')" class="p-3 rounded-2xl transition-all bg-orange-500 text-white shadow-lg">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </button>
+          <button id="btn-list" onclick="setView('list')" class="p-3 rounded-2xl transition-all text-slate-300 hover:text-slate-500">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="relative flex-1 md:flex-none">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="search-input" type="text" placeholder="Explorar..." class="pl-16 pr-8 py-4 bg-white rounded-[32px] border border-orange-50 shadow-sm w-full md:w-80 font-bold text-sm text-slate-700" oninput="onSearch()" />
+        </div>
+      </div>
+    </header>
+
+    <!-- HOME TAB -->
+    <div id="tab-home" class="space-y-20 fade-in">
+      <div id="stat-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6"></div>
+      <div id="fav-sections" class="space-y-20"></div>
+      <div id="rank-section" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8"></div>
+      <div id="year-section"></div>
+    </div>
+
+    <!-- BOOKS TAB -->
+    <div id="tab-books" class="hidden space-y-6 fade-in">
+      <div class="flex flex-wrap gap-3 p-2 bg-white border border-orange-50 rounded-[32px] w-fit shadow-sm">
+        <button data-filter="todos" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all bg-orange-500 text-white shadow-xl" onclick="setFilter('todos')">Todos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-white/20 text-white" id="count-todos">0</span></button>
+        <button data-filter="leido" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('leido')">Leídos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-leido">0</span></button>
+        <button data-filter="pendiente" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('pendiente')">Pendientes <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-pendiente">0</span></button>
+        <button data-filter="wishlist" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('wishlist')">Deseados <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-wishlist">0</span></button>
+      </div>
+      <!-- Year multi-select filter -->
+      <div id="year-filter-wrap" class="hidden items-center gap-3 flex-wrap bg-white border border-orange-50 rounded-[28px] px-6 py-4 w-fit shadow-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-400"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Año lectura:</span>
+        <div id="year-filter-pills" class="flex flex-wrap gap-2"></div>
+        <button onclick="clearYearFilter()" class="text-[10px] font-black text-orange-400 hover:text-orange-600 uppercase tracking-widest transition-colors ml-1">✕ Limpiar</button>
+      </div>
+      <div id="books-grid"></div>
+    </div>
+
+    <!-- AUTHORS TAB -->
+    <div id="tab-authors" class="hidden fade-in">
+      <div id="authors-grid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-50 flex items-center justify-center p-4 md:p-12">
+  <div id="modal-content" class="bg-white w-full max-w-6xl rounded-[60px] shadow-2xl overflow-hidden flex flex-col md:flex-row h-[90vh] zoom-in">
+    <div id="modal-left" class="w-full md:w-[38%] bg-slate-100 relative h-72 md:h-auto overflow-hidden"></div>
+    <div id="modal-right" class="flex-1 p-10 md:p-16 overflow-y-auto bg-white custom-scrollbar"></div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let books = [], authors = [], activeTab = 'home', viewMode = 'grid', searchTerm = '', bookFilter = 'todos';
+let selectedItem = null, modalType = null;
+let selectedYears = new Set();
+
+const FILE_BOOKS = 'libros_enriquecidos_full.csv';
+const FILE_AUTHORS = 'autores_enriquecidos.csv';
+
+// ===== SVG ICONS =====
+const icons = {
+  bookOpen: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  bookmark: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`,
+  star: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  heart: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+  calendar: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  globe: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+  timer: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+  mapPin: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+  penTool: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>`,
+  msgSquare: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  hash: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>`,
+  ribbon: `<svg viewBox="0 0 80 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+    <!-- ala izquierda del lazo -->
+    <path d="M40 42 C36 36 20 28 10 18 C4 11 6 2 14 4 C24 6 34 22 40 42Z"/>
+    <!-- ala derecha del lazo -->
+    <path d="M40 42 C44 36 60 28 70 18 C76 11 74 2 66 4 C56 6 46 22 40 42Z"/>
+    <!-- nudo central -->
+    <ellipse cx="40" cy="43" rx="8" ry="7"/>
+    <!-- cinta izquierda que cae -->
+    <path d="M36 49 C30 62 22 72 16 90 C14 96 24 99 26 92 C31 78 35 64 40 52Z"/>
+    <!-- cinta derecha que cae -->
+    <path d="M44 49 C50 62 58 72 64 90 C66 96 56 99 54 92 C49 78 45 64 40 52Z"/>
+  </svg>`,
+  stickyNote: `<svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9z"/><polyline points="15 3 15 9 21 9"/></svg>`,
+  quote: `<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/></svg>`,
+  skull: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="m12.5 17-.5-1-.5 1h1z"/><path d="M16 20a2 2 0 0 0 1.956-1.575A.5.5 0 0 0 17.5 18h-11a.5.5 0 0 0-.482.356A2 2 0 0 0 8 20z"/><rect width="18" height="14" x="3" y="2" rx="9"/></svg>`,
+  history: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>`,
+  award: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>`,
+  users: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  eye: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  chevLeft: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>`,
+  chevRight: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>`,
+  starFill: (size=14) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  sparkles: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>`,
+  heartFill: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+  checkCircle: `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+  wikipedia: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+  barChart: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>`,
+  layers: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>`,
+  barcode: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14"/><path d="M8 5v14"/><path d="M12 5v14"/><path d="M17 5v14"/><path d="M21 5v14"/></svg>`,
+};
+
+// ===== DATA PROCESSING =====
+function processBooks(data) {
+  return data.map((b, i) => ({
+    ...b,
+    libro_id: b.libro_id || `book-${i}`,
+    rating: parseInt(b.Mi_Calificacion) || 0,
+    favorite: b.Es_Favorito?.toLowerCase() === 'sí' || b.Es_Favorito?.toLowerCase() === 'si',
+    estado: b.estado || (b.Anio_lectura ? 'leido' : b.Anio_lectura === "" && b.Mi_Calificacion === "" ? 'wishlist' : 'pendiente')
+  }));
+}
+
+function processAuthors(data) {
+  return data.map((a, i) => ({
+    ...a,
+    autor_id: a.autor_id || `auth-${i}`,
+    isDead: a.autor_vivo?.toLowerCase() === 'no' || !!a.fecha_muerte,
+    favorite: a.Es_Favorito?.toLowerCase() === 'sí' || a.Es_Favorito?.toLowerCase() === 'si'
+  }));
+}
+
+function calculateAge(born, died) {
+  if (!born) return null;
+  const start = new Date(born);
+  const end = (died && died !== "") ? new Date(died) : new Date();
+  if (isNaN(start.getTime())) return null;
+  let age = end.getFullYear() - start.getFullYear();
+  const m = end.getMonth() - start.getMonth();
+  if (m < 0 || (m === 0 && end.getDate() < start.getDate())) age--;
+  return age;
+}
+
+// ===== STATS =====
+function getStats() {
+  const counts = { authors: {}, countries: {}, genres: {}, genders: { 'Mujer': 0, 'Hombre': 0, 'Otro': 0 } };
+  books.forEach(b => {
+    if (b.Autor) counts.authors[b.Autor] = (counts.authors[b.Autor] || 0) + 1;
+    if (b.genero_libro) counts.genres[b.genero_libro] = (counts.genres[b.genero_libro] || 0) + 1;
+  });
+  authors.forEach(a => {
+    if (a.pais) counts.countries[a.pais] = (counts.countries[a.pais] || 0) + 1;
+    const g = a.genero_autor || 'Otro';
+    if (counts.genders[g] !== undefined) counts.genders[g]++; else counts.genders['Otro']++;
+  });
+  const top = (obj, n=5) => Object.entries(obj).filter(([name]) => name && name !== 'undefined').map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, n);
+  return {
+    rankedAuthors: top(counts.authors),
+    rankedCountries: top(counts.countries),
+    rankedGenres: top(counts.genres),
+    genders: counts.genders,
+    totalLeidos: books.filter(b => b.estado === 'leido').length,
+    totalPendientes: books.filter(b => b.estado === 'pendiente').length,
+    totalWishlist: books.filter(b => b.estado === 'wishlist').length,
+    favBooks: books.filter(b => b.favorite),
+    favAuthors: authors.filter(a => a.favorite)
+  };
+}
+
+// ===== STAR RATING HTML =====
+function starsHtml(rating, size = 14) {
+  return [...Array(5)].map((_, i) =>
+    `<span class="${i < rating ? 'text-amber-400' : 'text-slate-200'}">${icons.starFill(size)}</span>`
+  ).join('');
+}
+
+// ===== WIKIPEDIA BUTTON =====
+function wikipediaBtn(title) {
+  if (!title) return '';
+  const query = encodeURIComponent(title);
+  return `<a href="https://es.wikipedia.org/wiki/Special:Search?search=${query}" target="_blank" rel="noopener"
+    onclick="event.stopPropagation()"
+    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-slate-100 hover:bg-slate-800 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-200 hover:border-transparent">
+    ${icons.wikipedia}
+    Wikipedia
+  </a>`;
+}
+
+// ===== INFO BOX WITH TOOLTIP =====
+function modernInfoBoxTooltip(label, value, icon) {
+  const display = value || '---';
+  const isLong = display.length > 16;
+  const inner = isLong
+    ? `<div class="tooltip-wrap cursor-help"><p class="text-sm font-black text-slate-700 truncate" style="max-width:110px">${display}</p><span class="tooltip-text">${display}</span></div>`
+    : `<p class="text-sm font-black text-slate-700 truncate">${display}</p>`;
+  return `<div class="flex items-center gap-4 bg-white p-5 rounded-[28px] border border-orange-50 shadow-sm group hover:border-orange-200 transition-colors">
+    <div class="p-3 bg-orange-50 rounded-2xl text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-all flex-shrink-0">${icon}</div>
+    <div class="min-w-0 flex-1">
+      <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest block mb-0.5">${label}</span>
+      ${inner}
+    </div>
+  </div>`;
+}
+
+// ===== RENDER HOME =====
+function renderHome() {
+  const stats = getStats();
+
+  // Stat cards — 5 KPIs, libros fav y autores fav separados
+  const statData = [
+    { label: 'Leídos',          value: stats.totalLeidos,           color: 'bg-emerald-500 shadow-emerald-100', icon: icons.bookOpen },
+    { label: 'Pendientes',      value: stats.totalPendientes,       color: 'bg-amber-500 shadow-amber-100',   icon: icons.bookmark },
+    { label: 'Deseados',        value: stats.totalWishlist,         color: 'bg-indigo-500 shadow-indigo-100', icon: icons.star },
+    { label: 'Libros favoritos',value: stats.favBooks.length,       color: 'bg-rose-500 shadow-rose-100',     icon: icons.heartFill },
+    { label: 'Autores favoritos',value: stats.favAuthors.length,    color: 'bg-fuchsia-500 shadow-fuchsia-100', icon: icons.heart },
+  ];
+  document.getElementById('stat-cards').innerHTML = statData.map(s => `
+    <div class="bg-white p-7 rounded-[40px] border border-orange-50 shadow-sm flex items-center gap-5 group hover:shadow-xl hover:-translate-y-1 transition-all">
+      <div class="p-4 rounded-[22px] text-white shadow-xl group-hover:rotate-6 transition-transform flex-shrink-0 ${s.color}">${s.icon}</div>
+      <div class="min-w-0">
+        <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 truncate">${s.label}</p>
+        <p class="text-3xl font-black text-slate-800 tracking-tighter">${s.value}</p>
+      </div>
+    </div>
+  `).join('');
+
+  // Favorite sections
+  let favHtml = '';
+  if (stats.favBooks.length > 0) {
+    favHtml += `
+      <section>
+        <div class="flex items-center gap-4 mb-10">
+          <div class="w-12 h-12 rounded-2xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-amber-400">${icons.sparkles}</div>
+          <h3 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">Obras Predilectas</h3>
+        </div>
+        <div class="relative group">
+          <div class="flex gap-8 overflow-x-auto snap-x scrollbar-hide pb-10 px-4" id="fav-books-scroll" style="scroll-snap-type:x mandatory">
+            ${stats.favBooks.map(book => `
+              <div onclick="openModal('${book.libro_id}','book')" class="snap-start flex-shrink-0 w-64 group cursor-pointer" style="scroll-snap-align:start">
+                <div class="aspect-[3/4] rounded-[40px] overflow-hidden shadow-lg border border-orange-50 relative mb-4">
+                  <img src="${book.portada_url||''}" class="w-full h-full object-cover transition-all duration-700 hover:scale-110" alt="${book.titulo||''}" onerror="this.src='https://via.placeholder.com/300x400'"/>
+                </div>
+                <h4 class="font-black text-slate-800 truncate px-2">${book.titulo||''}</h4>
+                <p class="text-orange-500 font-bold text-[11px] px-2">${book.Autor||''}</p>
+              </div>
+            `).join('')}
+          </div>
+          <button onclick="document.getElementById('fav-books-scroll').scrollBy({left:-400,behavior:'smooth'})" class="absolute top-[40%] -left-7 w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all opacity-0 group-hover:opacity-100 z-10 border border-orange-50">${icons.chevLeft}</button>
+          <button onclick="document.getElementById('fav-books-scroll').scrollBy({left:400,behavior:'smooth'})" class="absolute top-[40%] -right-7 w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all opacity-0 group-hover:opacity-100 z-10 border border-orange-50">${icons.chevRight}</button>
+        </div>
+      </section>`;
+  }
+  if (stats.favAuthors.length > 0) {
+    favHtml += `
+      <section>
+        <div class="flex items-center gap-4 mb-10">
+          <div class="w-12 h-12 rounded-2xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-rose-400">${icons.heart}</div>
+          <h3 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">Autores de Cabecera</h3>
+        </div>
+        <div class="relative group">
+          <div class="flex gap-8 overflow-x-auto snap-x scrollbar-hide pb-10 px-4" id="fav-authors-scroll" style="scroll-snap-type:x mandatory">
+            ${stats.favAuthors.map(author => `
+              <div onclick="openModal('${author.autor_id}','author')" class="snap-start flex-shrink-0 w-48 text-center cursor-pointer" style="scroll-snap-align:start">
+                <div class="aspect-square rounded-full overflow-hidden shadow-lg border-4 border-white mb-4 relative">
+                  <img src="${author.foto_url||''}" class="w-full h-full object-cover hover:scale-110 transition-transform duration-700" alt="${author.nombre||''}" onerror="this.src='https://via.placeholder.com/150'"/>
+                </div>
+                <h4 class="font-black text-slate-800 text-sm truncate leading-tight mb-1">${author.nombre||''}</h4>
+                <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">${author.pais||''}</span>
+              </div>
+            `).join('')}
+          </div>
+          <button onclick="document.getElementById('fav-authors-scroll').scrollBy({left:-400,behavior:'smooth'})" class="absolute top-[40%] -left-7 w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all opacity-0 group-hover:opacity-100 z-10 border border-orange-50">${icons.chevLeft}</button>
+          <button onclick="document.getElementById('fav-authors-scroll').scrollBy({left:400,behavior:'smooth'})" class="absolute top-[40%] -right-7 w-14 h-14 bg-white rounded-full shadow-2xl flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all opacity-0 group-hover:opacity-100 z-10 border border-orange-50">${icons.chevRight}</button>
+        </div>
+      </section>`;
+  }
+  document.getElementById('fav-sections').innerHTML = favHtml;
+
+  // Rank cards (now 4 columns, including authors)
+  const total = stats.genders.Mujer + stats.genders.Hombre + stats.genders.Otro;
+  const fP = total > 0 ? (stats.genders.Mujer / total) * 100 : 0;
+  const mP = total > 0 ? (stats.genders.Hombre / total) * 100 : 0;
+  const genderSvg = total === 0
+    ? `<circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="4"/>`
+    : `<circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="4"/>
+       <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#fb7185" stroke-width="4" stroke-dasharray="${fP} ${100-fP}" stroke-linecap="round"/>
+       <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#38bdf8" stroke-width="4" stroke-dasharray="${mP} ${100-mP}" stroke-dashoffset="-${fP}" stroke-linecap="round"/>`;
+
+  const rankHtml = (title, items, color) => {
+    const max = items[0]?.count || 1;
+    return `<div class="bg-white p-10 rounded-[48px] border border-orange-50 shadow-sm">
+      <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8">${title}</h3>
+      <div class="space-y-6">
+        ${items.map(item => `
+          <div class="group">
+            <div class="flex justify-between items-end mb-2">
+              <span class="text-xs font-black text-slate-700 truncate w-4/5 group-hover:text-orange-500 transition-colors">${item.name}</span>
+              <span class="text-[10px] font-bold text-slate-400">${item.count}</span>
+            </div>
+            <div class="h-2 bg-slate-50 rounded-full overflow-hidden">
+              <div class="h-full opacity-60 hover:opacity-100 transition-all rounded-full ${color}" style="width:${(item.count/max)*100}%"></div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  };
+
+  document.getElementById('rank-section').innerHTML = `
+    <div class="bg-white p-10 rounded-[48px] border border-orange-50 shadow-sm flex flex-col items-center">
+      <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8 self-start">Balance Género Autores</h3>
+      <div class="relative w-40 h-40 mb-6">
+        <svg viewBox="0 0 36 36" class="w-full h-full" style="transform:rotate(-90deg)">${genderSvg}</svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center">
+          <span class="text-3xl font-black text-slate-800 tracking-tighter">${authors.length}</span>
+          <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Autores</span>
+        </div>
+      </div>
+      <div class="flex justify-around w-full">
+        <div class="text-center"><div class="w-3 h-3 rounded-full bg-rose-400 mx-auto mb-2"></div><span class="text-[10px] font-black text-slate-400 uppercase">Mujeres</span><p class="font-black text-slate-800">${stats.genders.Mujer}</p></div>
+        <div class="text-center"><div class="w-3 h-3 rounded-full bg-sky-400 mx-auto mb-2"></div><span class="text-[10px] font-black text-slate-400 uppercase">Hombres</span><p class="font-black text-slate-800">${stats.genders.Hombre}</p></div>
+      </div>
+    </div>
+    ${rankHtml('Autores Más Leídos', stats.rankedAuthors, 'bg-orange-400')}
+    ${rankHtml('Países Recurrentes', stats.rankedCountries, 'bg-indigo-400')}
+    ${rankHtml('Géneros Literarios', stats.rankedGenres, 'bg-emerald-400')}
+  `;
+
+  // Books per year bar chart
+  renderYearChart();
+}
+
+// ===== BOOKS PER YEAR CHART =====
+function renderYearChart() {
+  const yearCounts = {};
+  books.filter(b => b.estado === 'leido' && b.Anio_lectura).forEach(b => {
+    const y = String(b.Anio_lectura).trim();
+    if (y) yearCounts[y] = (yearCounts[y] || 0) + 1;
+  });
+  const entries = Object.entries(yearCounts).sort(([a],[b]) => Number(a) - Number(b));
+  if (entries.length === 0) { document.getElementById('year-section').innerHTML = ''; return; }
+  const maxVal = Math.max(...entries.map(([,v]) => v));
+
+  document.getElementById('year-section').innerHTML = `
+    <div class="bg-white p-12 rounded-[60px] border border-orange-50 shadow-sm">
+      <div class="flex items-center gap-4 mb-12">
+        <div class="w-12 h-12 rounded-2xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-orange-400">${icons.barChart}</div>
+        <div>
+          <h3 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">Libros por Año</h3>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Leídos año a año · clic para filtrar en Biblioteca</p>
+        </div>
+      </div>
+      <div class="flex items-end gap-3 overflow-x-auto pb-2 scrollbar-hide" style="min-height:180px; align-items:flex-end">
+        ${entries.map(([year, count]) => {
+          const barH = Math.max(24, Math.round((count / maxVal) * 150));
+          return `
+            <div class="flex flex-col items-center gap-2 flex-shrink-0 group cursor-pointer" onclick="filterByYear('${year}')">
+              <span class="text-[11px] font-black text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">${count}</span>
+              <div class="relative w-12 rounded-t-2xl bg-orange-100 group-hover:bg-orange-500 transition-all duration-200 flex items-end justify-center" style="height:${barH}px">
+              </div>
+              <span class="text-[11px] font-black text-slate-500 group-hover:text-orange-500 transition-colors">${year}</span>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+// ===== YEAR FILTER =====
+function filterByYear(year) {
+  setTab('books');
+  setFilter('leido');
+  selectedYears = new Set([year]);
+  renderYearFilterPills();
+  renderBooks();
+}
+
+function clearYearFilter() {
+  selectedYears.clear();
+  renderYearFilterPills();
+  renderBooks();
+}
+
+function toggleYearFilter(year) {
+  if (selectedYears.has(year)) selectedYears.delete(year);
+  else selectedYears.add(year);
+  renderYearFilterPills();
+  renderBooks();
+}
+
+function renderYearFilterPills() {
+  const wrap = document.getElementById('year-filter-wrap');
+  const pills = document.getElementById('year-filter-pills');
+
+  // Only show for leido or todos
+  if (bookFilter !== 'leido' && bookFilter !== 'todos') {
+    wrap.classList.add('hidden'); wrap.classList.remove('flex');
+    return;
+  }
+  const leidos = books.filter(b => b.estado === 'leido' && b.Anio_lectura);
+  const years = [...new Set(leidos.map(b => String(b.Anio_lectura).trim()).filter(Boolean))].sort((a,b) => Number(a)-Number(b));
+  if (years.length === 0) { wrap.classList.add('hidden'); wrap.classList.remove('flex'); return; }
+
+  wrap.classList.remove('hidden'); wrap.classList.add('flex');
+  pills.innerHTML = years.map(y => `
+    <button onclick="toggleYearFilter('${y}')"
+      class="year-pill px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${selectedYears.has(y) ? 'active' : 'border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500 bg-white'}">
+      ${y}
+    </button>`).join('');
+}
+
+// ===== RENDER BOOKS =====
+function getFilteredBooks() {
+  const s = searchTerm.toLowerCase();
+  return books.filter(b => {
+    const matchSearch = (b.titulo||'').toLowerCase().includes(s) || (b.Autor||'').toLowerCase().includes(s);
+    const matchFilter = bookFilter === 'todos' || b.estado === bookFilter;
+    const matchYear = selectedYears.size === 0 || selectedYears.has(String(b.Anio_lectura||'').trim());
+    return matchSearch && matchFilter && matchYear;
+  });
+}
+
+function renderBooks() {
+  const stats = getStats();
+  const filtered = getFilteredBooks();
+  document.getElementById('count-todos').textContent = books.length;
+  document.getElementById('count-leido').textContent = stats.totalLeidos;
+  document.getElementById('count-pendiente').textContent = stats.totalPendientes;
+  document.getElementById('count-wishlist').textContent = stats.totalWishlist;
+
+  renderYearFilterPills();
+
+  const grid = document.getElementById('books-grid');
+  if (viewMode === 'grid') {
+    grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-12';
+    grid.innerHTML = filtered.map(book => `
+      <div onclick="openModal('${book.libro_id}','book')" class="bg-white p-6 rounded-[50px] border border-orange-50 shadow-sm hover:shadow-2xl transition-all cursor-pointer group relative">
+        ${book.favorite ? `<div class="absolute top-10 left-10 z-10 bg-rose-500 text-white p-3 rounded-full shadow-lg border-2 border-white">${icons.heartFill}</div>` : ''}
+        <div class="h-80 rounded-[40px] overflow-hidden mb-8 relative shadow-lg">
+          <img src="${book.portada_url||''}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" alt="C" onerror="this.src='https://via.placeholder.com/300x450'"/>
+          <div class="absolute top-5 right-5 bg-white/95 backdrop-blur-md px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-800 shadow-xl">${book.estado||''}</div>
+        </div>
+        <div class="text-center px-4">
+          <h4 class="font-black text-slate-800 text-xl mb-2 truncate leading-tight">${book.titulo||''}</h4>
+          <p class="text-orange-500 font-bold text-sm mb-5">${book.Autor||''}</p>
+          <div class="flex justify-center gap-1 text-amber-400">${starsHtml(book.rating, 14)}</div>
+        </div>
+      </div>
+    `).join('');
+  } else {
+    grid.className = 'space-y-6';
+    grid.innerHTML = filtered.map(book => `
+      <div onclick="openModal('${book.libro_id}','book')" class="bg-white p-5 pr-10 rounded-[32px] border border-orange-50 shadow-sm flex items-center gap-8 cursor-pointer hover:bg-orange-50 transition-all group">
+        <div class="relative">
+          <img src="${book.portada_url||''}" class="w-16 h-24 object-cover rounded-2xl shadow-md" alt="T" onerror="this.src='https://via.placeholder.com/60x80'"/>
+          ${book.favorite ? `<div class="absolute -top-2 -left-2 bg-rose-500 text-white p-1.5 rounded-full shadow-md border-2 border-white">${icons.heartFill}</div>` : ''}
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="font-black text-slate-800 truncate text-xl">${book.titulo||''}</h4>
+          <p class="text-xs font-bold text-orange-500 uppercase tracking-[0.2em]">${book.Autor||''}</p>
+        </div>
+        <div class="hidden md:flex flex-col items-end min-w-[120px]">
+          <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Lectura</span>
+          <span class="text-[11px] font-black text-slate-500 uppercase tracking-tight">${book.Mes_Lectura||'--'} ${book.Anio_lectura||''}</span>
+        </div>
+        <div class="flex gap-1 text-amber-400">${starsHtml(book.rating, 16)}</div>
+        <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-orange-500 group-hover:text-white transition-all">${icons.eye}</div>
+      </div>
+    `).join('');
+  }
+}
+
+// ===== RENDER AUTHORS =====
+function renderAuthors() {
+  const s = searchTerm.toLowerCase();
+  const filtered = authors.filter(a => (a.nombre||'').toLowerCase().includes(s));
+  const grid = document.getElementById('authors-grid');
+  if (viewMode === 'grid') {
+    grid.className = 'grid grid-cols-2 lg:grid-cols-4 gap-12';
+    grid.innerHTML = filtered.map(author => {
+      const bookCount = books.filter(b => b.Autor?.trim().toLowerCase() === author.nombre?.trim().toLowerCase()).length;
+      const age = calculateAge(author.fecha_nacimiento, author.fecha_muerte);
+      return `
+        <div onclick="openModal('${author.autor_id}','author')" class="bg-white p-10 rounded-[60px] border border-orange-50 shadow-sm hover:shadow-2xl transition-all cursor-pointer text-center group relative overflow-hidden">
+          ${author.isDead ? `<div class="absolute top-3 right-3 w-9 h-12 text-slate-500 group-hover:text-slate-800 transition-colors drop-shadow-sm">${icons.ribbon}</div>` : ''}
+          ${author.favorite ? `<div class="absolute top-8 left-8 bg-rose-500 text-white p-2.5 rounded-full shadow-lg border-2 border-white z-10">${icons.heartFill}</div>` : ''}
+          <div class="w-32 h-32 rounded-full overflow-hidden mx-auto mb-8 border-4 border-orange-50 group-hover:scale-110 transition-transform shadow-2xl ${author.isDead?'grayscale-[0.3]':''}">
+            <img src="${author.foto_url||''}" class="w-full h-full object-cover" alt="A" onerror="this.src='https://via.placeholder.com/150'"/>
+          </div>
+          <h4 class="font-black text-slate-800 text-xl mb-2 leading-tight tracking-tighter">${author.nombre||''}</h4>
+          <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4">${author.pais||''}</p>
+          <div class="flex flex-col gap-1 mb-6 text-[10px] font-bold text-slate-400">
+            <span class="flex items-center justify-center gap-2">${icons.calendar} ${(author.fecha_nacimiento||'?').split('-')[0]} — ${author.fecha_muerte ? author.fecha_muerte.split('-')[0] : (author.autor_vivo === 'No' ? '?' : 'Actual')}</span>
+            <span class="text-slate-300 italic">${age !== null ? age : '?'} años</span>
+          </div>
+          <div class="flex items-center justify-center gap-2 px-5 py-2.5 bg-orange-50 rounded-[20px] text-orange-600 text-[10px] font-black w-fit mx-auto shadow-sm">
+            ${icons.bookOpen.replace('24','14')} ${bookCount} libros
+          </div>
+        </div>`;
+    }).join('');
+  } else {
+    grid.className = 'space-y-6';
+    grid.innerHTML = filtered.map(author => {
+      const bookCount = books.filter(b => b.Autor?.trim().toLowerCase() === author.nombre?.trim().toLowerCase()).length;
+      return `
+        <div onclick="openModal('${author.autor_id}','author')" class="bg-white p-6 pr-12 rounded-[32px] border border-orange-50 shadow-sm flex items-center gap-8 cursor-pointer hover:bg-orange-50 transition-all group">
+          <div class="relative">
+            <img src="${author.foto_url||''}" class="w-16 h-16 rounded-full object-cover shadow-lg ${author.isDead?'grayscale-[0.4]':''}" alt="A" onerror="this.src='https://via.placeholder.com/60'"/>
+            ${author.favorite ? `<div class="absolute -top-1 -left-1 bg-rose-500 text-white p-1.5 rounded-full shadow-md border-2 border-white">${icons.heartFill}</div>` : ''}
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-3 mb-1">
+              <h4 class="font-black text-slate-800 text-xl">${author.nombre||''}</h4>
+              ${author.isDead ? `<span class="w-5 h-7 inline-block text-slate-400">${icons.ribbon}</span>` : ''}
+            </div>
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${author.pais||''} • ${author.nacionalidad||''}</p>
+          </div>
+          <div class="flex items-center gap-3 px-5 py-2 bg-white rounded-2xl text-orange-500 text-[10px] font-black shadow-sm group-hover:bg-orange-500 group-hover:text-white transition-all">
+            ${icons.bookOpen.replace('24','14')} ${bookCount}
+          </div>
+          ${icons.chevRight}
+        </div>`;
+    }).join('');
+  }
+}
+
+// ===== MODAL =====
+let modalHistory = []; // stack for back navigation
+
+function openModal(id, type, pushHistory = true) {
+  // Push current item to history before navigating (if we have one and it's a forward nav)
+  if (pushHistory && selectedItem) {
+    modalHistory.push({ id: selectedItem[modalType === 'book' ? 'libro_id' : 'autor_id'], type: modalType });
+  }
+  if (pushHistory && !selectedItem) {
+    modalHistory = []; // fresh open, reset history
+  }
+
+  modalType = type;
+  selectedItem = type === 'book' ? books.find(b => b.libro_id === id) : authors.find(a => a.autor_id === id);
+  if (!selectedItem) return;
+
+  const left = document.getElementById('modal-left');
+  const right = document.getElementById('modal-right');
+
+  left.innerHTML = `
+    <img src="${selectedItem.portada_url || selectedItem.foto_url || ''}" class="w-full h-full object-cover transition-all duration-1000 ${selectedItem.isDead ? 'grayscale-[0.4] hover:grayscale-0' : ''}" alt="Item" onerror="this.src='https://via.placeholder.com/600x900'"/>
+    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+    <div class="absolute top-10 left-10 flex items-center gap-3">
+      <button onclick="closeModal()" class="bg-white/20 hover:bg-white/40 p-4 rounded-full text-white backdrop-blur-xl transition-all">${icons.chevLeft}</button>
+      ${modalHistory.length > 0 ? `<button onclick="goModalBack()" class="bg-white/20 hover:bg-orange-500 px-5 py-3 rounded-full text-white backdrop-blur-xl transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver
+      </button>` : ''}
+    </div>
+    ${selectedItem.isDead && type === 'author' ? `
+      <div class="absolute top-8 right-8 w-12 h-16 text-white drop-shadow-2xl">${icons.ribbon}</div>` : ''}
+    ${selectedItem.favorite ? `<div class="absolute bottom-10 left-10 bg-rose-500 text-white p-4 rounded-full shadow-xl">${icons.heartFill}</div>` : ''}
+  `;
+
+  const tags = [
+    selectedItem.continente ? `<span class="flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm bg-indigo-50 text-indigo-600">${icons.globe} ${selectedItem.continente}</span>` : '',
+    selectedItem.epoca ? `<span class="flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm bg-orange-50 text-orange-600">${icons.timer} ${selectedItem.epoca}</span>` : '',
+    selectedItem.nacionalidad ? `<span class="flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm bg-slate-100 text-slate-600">${icons.mapPin} ${selectedItem.nacionalidad}</span>` : '',
+  ].filter(Boolean).join('');
+
+  const wikiTerm = selectedItem.titulo || selectedItem.nombre || '';
+
+  let detail = '';
+  if (type === 'book') {
+    // Subgenero: try multiple possible field names
+    const subgenero = selectedItem.subgenero_libro || selectedItem.subgenero || selectedItem.Subgenero || selectedItem.sub_genero || '';
+
+    const isbn = selectedItem.ISBN || selectedItem.isbn || selectedItem.isbn_13 || selectedItem.isbn13 || selectedItem.ISBN_13 || '';
+
+    detail = `
+      <div class="space-y-16">
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-5">
+            ${modernInfoBoxTooltip('Género', selectedItem.genero_libro, icons.hash)}
+            ${modernInfoBoxTooltip('Subgénero', subgenero, icons.layers)}
+          </div>
+          <div class="grid grid-cols-3 gap-5">
+            ${modernInfoBoxTooltip('Publicación', selectedItem.anio_publicacion, icons.calendar)}
+            ${modernInfoBoxTooltip('Idioma Original', selectedItem.idioma_original, icons.msgSquare)}
+            ${modernInfoBoxTooltip('ISBN', isbn, icons.barcode)}
+          </div>
+        </div>
+        <section class="bg-orange-50/40 -mx-10 md:-mx-16 p-10 md:p-16 space-y-10">
+          <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] mb-10 flex items-center gap-4"><span class="w-8 h-1 bg-orange-100 rounded-full"></span>Mi Experiencia de Lectura</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div class="space-y-6">
+              <div class="flex items-center gap-6 bg-white p-6 rounded-[32px] shadow-sm border border-orange-100/50">
+                <div class="p-4 bg-orange-500 rounded-2xl text-white shadow-lg shadow-orange-100">${icons.starFill(24)}</div>
+                <div>
+                  <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest block mb-1">Calificación</span>
+                  <div class="flex gap-1 text-amber-400">${starsHtml(selectedItem.rating, 20)}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-6 bg-white p-6 rounded-[32px] shadow-sm border border-orange-100/50">
+                <div class="p-4 bg-emerald-500 rounded-2xl text-white shadow-lg shadow-emerald-100">${icons.calendar}</div>
+                <div>
+                  <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest block mb-1">Fecha de Lectura</span>
+                  <p class="font-black text-slate-700 uppercase tracking-tight">${selectedItem.Mes_Lectura||'---'} ${selectedItem.Anio_lectura||''}</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white p-8 rounded-[40px] shadow-sm border border-orange-100/50 relative overflow-hidden">
+              <div class="absolute -right-4 -bottom-4 text-orange-100 opacity-20">${icons.stickyNote}</div>
+              <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest block mb-4">Notas y Reflexiones</span>
+              <p class="text-slate-600 font-medium leading-relaxed italic">${selectedItem.Notas||'Sin notas personales para este libro.'}</p>
+            </div>
+          </div>
+        </section>
+        <div>
+          <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-[0.3em] mb-6">Sinopsis</h4>
+          <p class="text-slate-600 text-xl leading-relaxed font-medium">${selectedItem.resumen||'Sin descripción.'}</p>
+        </div>
+      </div>`;
+  } else {
+    const authorBooks = books.filter(b => b.Autor?.trim().toLowerCase() === selectedItem.nombre?.trim().toLowerCase());
+    const age = calculateAge(selectedItem.fecha_nacimiento, selectedItem.fecha_muerte);
+    const innerCarousel = authorBooks.length > 0 ? `
+      <section class="bg-orange-50/30 -mx-10 md:-mx-16 p-10 md:p-16">
+        <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] mb-10 flex items-center gap-4"><span class="w-8 h-1 bg-orange-100 rounded-full"></span>En mi biblioteca</h4>
+        <div class="relative group">
+          <div class="flex gap-8 overflow-x-auto snap-x scrollbar-hide pb-4" id="author-books-scroll" style="scroll-snap-type:x mandatory;scrollbar-width:none">
+            ${authorBooks.map(book => `
+              <div class="snap-start flex-shrink-0 w-44 cursor-pointer group/bk" style="scroll-snap-align:start" onclick="openModal('${book.libro_id}','book')">
+                <div class="relative aspect-[2/3] rounded-3xl overflow-hidden shadow-md mb-3">
+                  <img src="${book.portada_url||''}" class="w-full h-full object-cover group-hover/bk:scale-105 transition-transform duration-500" alt="${book.titulo||''}"/>
+                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/bk:opacity-100 transition-opacity flex items-end p-3">
+                    <span class="text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      Ver libro
+                    </span>
+                  </div>
+                  <div class="absolute top-2 right-2">
+                    <span class="px-2 py-1 rounded-full text-[8px] font-black uppercase text-white ${book.estado==='leido'?'bg-emerald-500':'bg-amber-500'}">${book.estado||''}</span>
+                  </div>
+                </div>
+                <h5 class="text-[11px] font-black text-slate-800 truncate px-1 group-hover/bk:text-orange-500 transition-colors">${book.titulo||''}</h5>
+                <div class="flex text-amber-400 gap-0.5 px-1 mt-1">${starsHtml(book.rating, 8)}</div>
+              </div>`).join('')}
+          </div>
+          ${authorBooks.length > 3 ? `
+            <button onclick="document.getElementById('author-books-scroll').scrollBy({left:-300,behavior:'smooth'})" class="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all opacity-0 group-hover:opacity-100 border border-orange-50">${icons.chevLeft}</button>
+            <button onclick="document.getElementById('author-books-scroll').scrollBy({left:300,behavior:'smooth'})" class="absolute -right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-xl flex items-center justify-center text-slate-400 hover:text-orange-500 transition-all opacity-0 group-hover:opacity-100 border border-orange-50">${icons.chevRight}</button>
+          ` : ''}
+        </div>
+      </section>` : '';
+
+    detail = `
+      <div class="space-y-20">
+        <section>
+          <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] mb-10 flex items-center gap-4"><span class="w-8 h-1 bg-orange-100 rounded-full"></span>Retrato</h4>
+          <div class="bg-white border-2 border-orange-50 p-10 rounded-[40px] relative overflow-hidden group">
+            <div class="absolute -right-4 -bottom-4 text-orange-100 opacity-20 group-hover:opacity-40 transition-opacity">${icons.quote}</div>
+            <p class="text-2xl italic text-slate-700 leading-relaxed font-medium relative z-10">"${selectedItem.descripcion||'Sin descripción biográfica.'}"</p>
+          </div>
+        </section>
+        ${innerCarousel}
+        <section>
+          <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] mb-10 flex items-center gap-4"><span class="w-8 h-1 bg-orange-100 rounded-full"></span>Biografía e Identidad</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${bioCard('Género', selectedItem.genero_autor, icons.users)}
+            ${bioCard('Autor Vivo', selectedItem.autor_vivo, selectedItem.isDead ? icons.skull : icons.heart)}
+            ${bioCard('Siglo / Época', `${selectedItem.siglo||''}  / ${selectedItem.epoca||''}`, icons.history)}
+            ${bioCard('Nacimiento', selectedItem.fecha_nacimiento, icons.calendar, selectedItem.lugar_nacimiento_completo)}
+            ${bioCard('Defunción', selectedItem.fecha_muerte||'N/A', icons.skull)}
+            ${bioCard('Edad', age !== null ? age + ' años' : '?', icons.timer)}
+          </div>
+        </section>
+        <section class="bg-slate-50 -mx-10 md:-mx-16 p-10 md:p-16">
+          <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] mb-10 flex items-center gap-4"><span class="w-8 h-1 bg-orange-100 rounded-full"></span>Carrera Literaria</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div class="space-y-8">
+              ${detailInfo('Géneros Literarios', selectedItem.generos_literarios, icons.bookmark)}
+              ${detailInfo('Idioma Principal', selectedItem.idioma_principal, icons.msgSquare)}
+              ${detailInfo('Número de Obras', selectedItem.numero_obras, icons.hash)}
+            </div>
+            <div class="space-y-8">
+              ${detailInfoList('Principales Obras', selectedItem.principales_obras, icons.star)}
+              ${detailInfo('Premios Importantes', selectedItem.premios_importantes, icons.award)}
+            </div>
+          </div>
+        </section>
+      </div>`;
+  }
+
+  right.innerHTML = `
+    <div class="mb-14">
+      <div class="flex flex-wrap items-center gap-3 mb-6">${tags}</div>
+      <h2 class="text-4xl md:text-6xl font-black text-slate-800 leading-[1.05] mb-6 tracking-tighter">${selectedItem.titulo || selectedItem.nombre || ''}</h2>
+      <div class="flex flex-wrap items-center gap-4 mt-2">
+        ${selectedItem.Autor ? authorLinkBtn(selectedItem.Autor) : ''}
+        ${selectedItem.ocupacion ? `<span class="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">${icons.penTool} ${selectedItem.ocupacion}</span>` : ''}
+        ${wikipediaBtn(wikiTerm)}
+      </div>
+    </div>
+    ${detail}
+  `;
+
+  document.getElementById('modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.add('hidden');
+  document.body.style.overflow = '';
+  selectedItem = null; modalType = null;
+  modalHistory = [];
+}
+
+function goModalBack() {
+  if (modalHistory.length === 0) return;
+  const prev = modalHistory.pop();
+  openModal(prev.id, prev.type, false); // false = don't push to history
+}
+
+// Author name button — navigates to author modal from book modal
+function authorLinkBtn(authorName) {
+  const author = authors.find(a => a.nombre?.trim().toLowerCase() === authorName?.trim().toLowerCase());
+  if (!author) {
+    return `<span class="text-2xl font-bold text-orange-500">${authorName}</span>`;
+  }
+  return `<button onclick="openModal('${author.autor_id}','author')"
+    class="flex items-center gap-3 group/alink">
+    <img src="${author.foto_url||''}" class="w-10 h-10 rounded-full object-cover border-2 border-orange-100 shadow-md group-hover/alink:border-orange-400 transition-all" onerror="this.style.display='none'"/>
+    <span class="text-2xl font-bold text-orange-500 group-hover/alink:text-orange-600 underline underline-offset-4 decoration-orange-200 group-hover/alink:decoration-orange-500 transition-all">${authorName}</span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-300 group-hover/alink:text-orange-500 transition-colors"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+  </button>`;
+}
+
+// ===== HELPER HTML BUILDERS =====
+function bioCard(label, value, icon, sub) {
+  return `<div class="p-6 rounded-[32px] bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all group">
+    <div class="flex items-center gap-4 mb-4">
+      <div class="p-3 bg-white rounded-2xl text-slate-300 group-hover:text-orange-500 shadow-sm transition-colors">${icon}</div>
+      <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">${label}</span>
+    </div>
+    <p class="text-sm font-black text-slate-800">${value||'Desconocido'}</p>
+    ${sub ? `<p class="text-[10px] font-bold text-slate-400 mt-2 flex items-center gap-1">${icons.mapPin} ${sub}</p>` : ''}
+  </div>`;
+}
+
+function detailInfo(label, value, icon) {
+  return `<div class="flex gap-6 items-start">
+    <div class="p-3.5 bg-white rounded-2xl text-orange-200 shadow-sm">${icon}</div>
+    <div class="flex-1">
+      <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 block">${label}</span>
+      <p class="text-sm font-black text-slate-700 leading-snug">${value||'Información no disponible'}</p>
+    </div>
+  </div>`;
+}
+
+function detailInfoList(label, value, icon) {
+  const items = value ? value.split(',').map(i => `<span class="px-3 py-1 bg-white border border-slate-100 rounded-lg text-[11px] font-bold text-slate-600 shadow-sm hover:border-orange-200 transition-colors">${i.trim()}</span>`).join('') : 'No listado';
+  return `<div class="flex gap-6 items-start">
+    <div class="p-3.5 bg-white rounded-2xl text-orange-200 shadow-sm">${icon}</div>
+    <div class="flex-1">
+      <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-2 block">${label}</span>
+      <div class="flex flex-wrap gap-2">${items}</div>
+    </div>
+  </div>`;
+}
+
+// ===== TAB NAVIGATION =====
+function setTab(tab) {
+  activeTab = tab;
+  ['home','books','authors'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.add('hidden');
+  });
+  document.getElementById(`tab-${tab}`).classList.remove('hidden');
+
+  document.querySelectorAll('.sidebar-link').forEach(btn => {
+    const isActive = btn.dataset.tab === tab;
+    btn.className = `sidebar-link flex items-center gap-5 p-5 rounded-[28px] font-black transition-all group ${isActive ? 'bg-orange-500 text-white shadow-2xl shadow-orange-100' : 'text-slate-400 hover:bg-orange-50 hover:text-orange-600'}`;
+  });
+
+  const titles = { home: 'Resumen', books: 'Mi Biblioteca', authors: 'Mis Autores' };
+  const subtitles = { home: 'Tu universo literario en cifras', books: `${books.length} registros`, authors: `${authors.length} registros` };
+  document.getElementById('page-title').textContent = titles[tab];
+  document.getElementById('page-subtitle').innerHTML = `<span class="w-12 h-1 bg-orange-200 rounded-full inline-block"></span> ${subtitles[tab]}`;
+
+  const controls = document.getElementById('header-controls');
+  if (tab !== 'home') { controls.classList.remove('hidden'); controls.classList.add('flex'); }
+  else { controls.classList.add('hidden'); controls.classList.remove('flex'); }
+
+  if (tab === 'books') renderBooks();
+  if (tab === 'authors') renderAuthors();
+}
+
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById('btn-grid').className = `p-3 rounded-2xl transition-all ${mode==='grid'?'bg-orange-500 text-white shadow-lg':'text-slate-300 hover:text-slate-500'}`;
+  document.getElementById('btn-list').className = `p-3 rounded-2xl transition-all ${mode==='list'?'bg-orange-500 text-white shadow-lg':'text-slate-300 hover:text-slate-500'}`;
+  if (activeTab === 'books') renderBooks();
+  if (activeTab === 'authors') renderAuthors();
+}
+
+function setFilter(f) {
+  bookFilter = f;
+  if (f !== 'leido' && f !== 'todos') selectedYears.clear();
+  document.querySelectorAll('.pill-filter').forEach(btn => {
+    const isActive = btn.dataset.filter === f;
+    btn.className = `pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all ${isActive ? 'bg-orange-500 text-white shadow-xl' : 'text-slate-400 hover:text-slate-700'}`;
+    const badge = btn.querySelector('span');
+    badge.className = `px-2 py-0.5 rounded-lg text-[9px] ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-400'}`;
+  });
+  renderBooks();
+}
+
+function onSearch() {
+  searchTerm = document.getElementById('search-input').value;
+  if (activeTab === 'books') renderBooks();
+  if (activeTab === 'authors') renderAuthors();
+}
+
+// ===== GOOGLE CONFIG =====
+const GOOGLE_CLIENT_ID = '859059309250-pbjkpvfdl1kt7mp2da8adi6hk38nqgd4.apps.googleusercontent.com';
+const SHEET_ID_BOOKS   = '1B-JDvogcQSOmDdB00J9CHFYfDo3Di6WNssqsCilJbSo';
+const SHEET_ID_AUTHORS = '1P4snFOyh6V7m9eQO8xHQXNWVxYEDXUxY9QyezYaTOBQ';
+const SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly';
+
+let googleAccessToken = null;
+let dataSource = 'manual';
+
+// ===== INIT EVENT LISTENERS =====
+document.querySelectorAll('.sidebar-link').forEach(btn => {
+  btn.addEventListener('click', () => setTab(btn.dataset.tab));
+});
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.getElementById('file-books').addEventListener('change', e => handleFileUpload(e, 'books'));
+document.getElementById('file-authors').addEventListener('change', e => handleFileUpload(e, 'authors'));
+document.getElementById('auth-screen').addEventListener('change', e => {
+  if (e.target.id === 'file-books') handleFileUpload(e, 'books');
+  if (e.target.id === 'file-authors') handleFileUpload(e, 'authors');
+});
+
+// ===== GOOGLE SIGN IN =====
+function signInWithGoogle() {
+  const btn = document.getElementById('btn-google-signin');
+  btn.innerHTML = `<svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Conectando...`;
+  btn.disabled = true;
+
+  // Wait for GSI library to be ready
+  const tryInit = () => {
+    if (typeof google === 'undefined' || !google.accounts) {
+      setTimeout(tryInit, 200); return;
+    }
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: SCOPES,
+      callback: async (tokenResponse) => {
+        if (tokenResponse.error) {
+          btn.innerHTML = '⚠ Error al conectar. Intentá de nuevo.';
+          btn.disabled = false;
+          return;
+        }
+        googleAccessToken = tokenResponse.access_token;
+        dataSource = 'google';
+        // Get user profile
+        try {
+          const profileRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${googleAccessToken}` }
+          });
+          const profile = await profileRes.json();
+          document.getElementById('user-name').textContent = profile.name || profile.email;
+          document.getElementById('user-avatar').src = profile.picture || '';
+        } catch(e) { /* silent */ }
+        await loadFromGoogleSheets();
+      }
+    });
+    client.requestAccessToken();
+  };
+  tryInit();
+}
+
+function signOut() {
+  googleAccessToken = null;
+  dataSource = 'manual';
+  books = []; authors = [];
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('app').classList.remove('flex');
+  document.getElementById('auth-screen').classList.remove('hidden');
+  document.getElementById('user-info').classList.add('hidden');
+  document.getElementById('user-info').classList.remove('flex');
+  document.getElementById('btn-sync').classList.add('hidden');
+  document.getElementById('btn-sync').classList.remove('flex');
+  document.getElementById('btn-signout').classList.add('hidden');
+  document.getElementById('btn-signout').classList.remove('flex');
+  document.getElementById('btn-reload').classList.remove('hidden');
+  const btn = document.getElementById('btn-google-signin');
+  btn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="white" opacity="0.9"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="white" opacity="0.8"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="white" opacity="0.7"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="white" opacity="0.95"/></svg> Continuar con Google`;
+  btn.disabled = false;
+}
+
+// ===== LOAD FROM GOOGLE SHEETS =====
+async function loadFromGoogleSheets() {
+  document.getElementById('auth-screen').classList.add('hidden');
+  const ls = document.getElementById('loading-screen');
+  ls.classList.remove('hidden');
+  ls.style.display = 'flex';
+  ls.style.flexDirection = 'column';
+
+  try {
+    document.getElementById('loading-msg').textContent = 'Cargando libros desde Google Drive...';
+    const booksData = await fetchSheet(SHEET_ID_BOOKS);
+    books = processBooks(booksData);
+
+    document.getElementById('loading-msg').textContent = 'Cargando autores desde Google Drive...';
+    const authorsData = await fetchSheet(SHEET_ID_AUTHORS);
+    authors = processAuthors(authorsData);
+
+    startApp(true);
+  } catch(err) {
+    console.error('Sheets error:', err);
+    ls.style.display = 'none';
+    ls.classList.add('hidden');
+    document.getElementById('auth-screen').classList.remove('hidden');
+    const btn = document.getElementById('btn-google-signin');
+    btn.innerHTML = '⚠ Error al leer las Sheets. Verificá los permisos.';
+    btn.disabled = false;
+  }
+}
+
+async function fetchSheet(sheetId) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:ZZ10000`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Sheets API ${res.status}: ${text}`);
+  }
+  const json = await res.json();
+  const rows = json.values || [];
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => String(h).trim());
+  return rows.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = row[i] !== undefined ? String(row[i]) : ''; });
+    return obj;
+  });
+}
+
+// ===== SYNC =====
+async function syncFromDrive() {
+  if (!googleAccessToken) return;
+  const btn = document.getElementById('btn-sync');
+  const origHtml = btn.innerHTML;
+  btn.innerHTML = `<svg class="animate-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Sincronizando...`;
+  try {
+    const [booksData, authorsData] = await Promise.all([
+      fetchSheet(SHEET_ID_BOOKS),
+      fetchSheet(SHEET_ID_AUTHORS)
+    ]);
+    books = processBooks(booksData);
+    authors = processAuthors(authorsData);
+    renderHome();
+    if (activeTab === 'books') renderBooks();
+    if (activeTab === 'authors') renderAuthors();
+    showToast('✓ Datos actualizados desde Google Drive');
+  } catch(err) {
+    showToast('⚠ Error al sincronizar. Revisá tu conexión.', true);
+  } finally {
+    btn.innerHTML = origHtml;
+  }
+}
+
+// ===== TOAST =====
+function showToast(msg, isError = false) {
+  const existing = document.getElementById('toast-msg');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'toast-msg';
+  toast.style.cssText = `position:fixed;bottom:32px;right:32px;z-index:9999;padding:14px 24px;border-radius:20px;font-size:13px;font-weight:900;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.18);transition:all .3s;background:${isError?'#f43f5e':'#10b981'}`;
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => { if(toast.parentNode) toast.remove(); }, 3500);
+}
+
+// ===== START APP =====
+function startApp(fromGoogle = false) {
+  document.getElementById('auth-screen').classList.add('hidden');
+  const ls = document.getElementById('loading-screen');
+  ls.classList.add('hidden');
+  ls.style.display = 'none';
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('app').classList.add('flex');
+
+  if (fromGoogle) {
+    document.getElementById('user-info').classList.remove('hidden');
+    document.getElementById('user-info').classList.add('flex');
+    document.getElementById('btn-sync').classList.remove('hidden');
+    document.getElementById('btn-sync').classList.add('flex');
+    document.getElementById('btn-signout').classList.remove('hidden');
+    document.getElementById('btn-signout').classList.add('flex');
+    document.getElementById('btn-reload').classList.add('hidden');
+    showToast('✓ Conectado a Google Drive');
+  }
+  renderHome();
+}
+
+// ===== MANUAL FILE UPLOAD =====
+function handleFileUpload(e, type) {
+  const file = e.target.files[0];
+  if (!file) return;
+  Papa.parse(file, { header: true, skipEmptyLines: true, complete: (results) => {
+    if (type === 'books') {
+      books = processBooks(results.data);
+      const btn = document.getElementById('btn-books');
+      btn.innerHTML = `${icons.checkCircle}<span class="text-[10px] font-black uppercase tracking-widest text-emerald-600">Libros ✓</span><input type="file" accept=".csv" id="file-books" class="hidden"/>`;
+      btn.className = 'flex flex-col items-center gap-3 p-6 rounded-[32px] border-2 border-dashed cursor-pointer transition-all bg-emerald-50 border-emerald-200';
+    } else {
+      authors = processAuthors(results.data);
+      const btn = document.getElementById('btn-authors');
+      btn.innerHTML = `${icons.checkCircle}<span class="text-[10px] font-black uppercase tracking-widest text-emerald-600">Autores ✓</span><input type="file" accept=".csv" id="file-authors" class="hidden"/>`;
+      btn.className = 'flex flex-col items-center gap-3 p-6 rounded-[32px] border-2 border-dashed cursor-pointer transition-all bg-emerald-50 border-emerald-200';
+    }
+    if (books.length > 0 && authors.length > 0) startApp(false);
+  }});
+}
+</script>
+</body>
+</html>
