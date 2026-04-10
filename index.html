@@ -170,7 +170,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r17</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r19</p>
       </div>
     </div>
   </aside>
@@ -485,19 +485,18 @@ function showToast(msg, isError = false) {
 
 // ===== DATA PROCESSING =====
 function normalizeEstado(raw) {
-  const s = (raw || '').toLowerCase().trim();
-  if (s === 'leido' || s === 'leído') return 'Leido';
-  if (s === 'deseado' || s === 'wishlist') return 'Deseado';
-  if (s === 'pendiente') return 'Pendiente';
-  // null, empty, unknown → Pendiente
-  return 'Pendiente';
+  const s = (raw || '').trim();
+  const sl = s.toLowerCase();
+  if (sl === 'leido' || sl === 'leído') return 'Leido';
+  if (sl === 'deseado' || sl === 'wishlist') return 'Deseado';
+  if (sl === 'pendiente') return 'Pendiente';
+  return 'Pendiente'; // null, empty, unknown → Pendiente
 }
 
 function processBooks(data) {
   return data.map((b, i) => {
-    // Find estado field case-insensitively (could be 'estado', 'Estado', 'ESTADO')
-    const estadoKey = Object.keys(b).find(k => k.toLowerCase() === 'estado') || 'estado';
-    const rawEstado = b[estadoKey] || '';
+    // Support both 'Estado' (Sheet) and 'estado' (internal) — Sheet uses capital E
+    const rawEstado = b.Estado || b.estado || '';
     return {
       ...b,
       libro_id: b.libro_id || `book-${i}`,
@@ -1146,52 +1145,70 @@ async function getFirstSheetName(sheetId) {
   return json.sheets?.[0]?.properties?.title || 'Sheet1';
 }
 
-async function updateRowById(sheetId, idFieldName, idValue, values) {
+async function updateRowById(sheetId, idFieldName, idValue, fieldsToUpdate) {
   await ensureFreshToken();
 
-  // Step 1: Get all data to find the row number by ID
-  const allUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A:A`;
-  const allRes = await fetch(allUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
-  if (!allRes.ok) throw new Error(`Error leyendo columna A: ${allRes.status}`);
-  const allJson = await allRes.json();
-  const allRows = allJson.values || [];
-
-  // Find header row to get ID column index
+  // Get headers
   const headers = await getSheetHeaders(sheetId);
-  const idColIdx = headers.findIndex(h => h === idFieldName);
-  if (idColIdx === -1) throw new Error(`Campo "${idFieldName}" no encontrado`);
 
-  // Read the ID column
+  // Find ID column (case-insensitive)
+  const idColIdx = headers.findIndex(h => h.toLowerCase().trim() === idFieldName.toLowerCase().trim());
+  if (idColIdx === -1) throw new Error(`Columna "${idFieldName}" no encontrada. Headers: ${headers.join(',')}`);
+
+  // Read ID column to find the row
   const idColUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/R1C${idColIdx+1}:R10000C${idColIdx+1}?majorDimension=COLUMNS`;
   const idColRes = await fetch(idColUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
   if (!idColRes.ok) throw new Error(`Error leyendo columna ID: ${idColRes.status}`);
   const idColJson = await idColRes.json();
   const idColVals = (idColJson.values && idColJson.values[0]) ? idColJson.values[0] : [];
 
-  // Row 0 = header, find our ID starting from index 1
   let sheetRow = -1;
   for (let i = 1; i < idColVals.length; i++) {
-    if (idColVals[i] === idValue) { sheetRow = i + 1; break; } // +1 for 1-based, +1 for header
+    if (String(idColVals[i]).trim() === String(idValue).trim()) { sheetRow = i + 1; break; }
   }
-  if (sheetRow === -1) throw new Error(`Libro/Autor con ID "${idValue}" no encontrado en la hoja`);
+  if (sheetRow === -1) throw new Error(`ID "${idValue}" no encontrado. Primeros IDs: ${idColVals.slice(1,5).join(',')}`);
 
-  // Step 2: Get the sheet name for the range notation
+  // Build patch data: only update fields that exist in headers
+  // fieldsToUpdate is an object {fieldName: value}
   const sheetName = await getFirstSheetName(sheetId);
-  // Use open-ended row range — just specify the row, no end column needed
-  // batchUpdate with a named range using R1C1 notation avoids column letter issues
+  const updateData = [];
+
+  for (const [field, value] of Object.entries(fieldsToUpdate)) {
+    // Find column case-insensitively
+    const colIdx = headers.findIndex(h => h.toLowerCase().trim() === field.toLowerCase().trim());
+    if (colIdx === -1) {
+      console.warn(`Campo "${field}" no encontrado en headers, omitiendo`);
+      continue;
+    }
+    // Calculate column letter (A1 notation)
+    const colLetter = colIndexToLetter(colIdx);
+    const cellRange = `'${sheetName}'!${colLetter}${sheetRow}`;
+    updateData.push({ range: cellRange, values: [[String(value)]] });
+  }
+
+  if (updateData.length === 0) throw new Error('No hay campos válidos para actualizar');
+
+  console.log(`Updating row ${sheetRow}:`, updateData.map(d => `${d.range}="${d.values[0][0]}"`).join(', '));
+
   const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`;
-  const range = `'${sheetName}'!${sheetRow}:${sheetRow}`; // full row range — safest approach
-  const batchBody = {
-    valueInputOption: 'USER_ENTERED',
-    data: [{ range, values: [values] }]
-  };
   const res = await fetch(batchUrl, {
     method: 'POST',
     headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(batchBody)
+    body: JSON.stringify({ valueInputOption: 'USER_ENTERED', data: updateData })
   });
   if (!res.ok) throw new Error(`batchUpdate error ${res.status}: ${await res.text()}`);
   return res.json();
+}
+
+function colIndexToLetter(idx) {
+  let letter = '';
+  let n = idx + 1;
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    letter = String.fromCharCode(65 + rem) + letter;
+    n = Math.floor((n - 1) / 26);
+  }
+  return letter;
 }
 
 async function getSheetHeaders(sheetId) {
@@ -1602,27 +1619,35 @@ async function submitReadingExp(bookId) {
   data.Mi_Calificacion=_expRating||0;data.Es_Favorito=_expFav?'Sí':'No';
   await saveStatusChange(bookId,'Leido',data);
 }
-async function saveStatusChange(bookId,newEstado,extraData) {
-  const idx=books.findIndex(b=>b.libro_id===bookId);if(idx===-1)return;
+async function saveStatusChange(bookId, newEstado, extraData) {
+  const idx = books.findIndex(b => b.libro_id === bookId);
+  if (idx === -1) return;
   showDrawerLoading('Guardando en Google Drive...');
   try {
-    const headers=await getSheetHeaders(SHEET_ID_BOOKS);
-    // Build updated object — estado MUST come last to not be overwritten by extraData
-    const base = {...books[idx], ...extraData};
-    base.estado = newEstado; // always force the new estado, overrides everything
-    const rowValues=buildRowValues(base,headers);
-    // Log what we're writing for debugging
-    const estadoCol = headers.indexOf('estado');
-    console.log(`Saving estado="${newEstado}" in col ${estadoCol}, value in row: "${rowValues[estadoCol]}"`);
-    await updateRowById(SHEET_ID_BOOKS,'libro_id',bookId,rowValues);
-    // Update local state
-    books[idx]=processBooks([base])[0];
-    closeDrawer();closeStatusModal();closeModal();
+    // Field names must match Sheet headers EXACTLY (capital E in Estado)
+    const fieldsToUpdate = { Estado: newEstado };
+    if (extraData.Mes_Lectura   !== undefined) fieldsToUpdate.Mes_Lectura    = extraData.Mes_Lectura;
+    if (extraData.Anio_lectura  !== undefined) fieldsToUpdate.Anio_lectura   = extraData.Anio_lectura;
+    if (extraData.Mi_Calificacion !== undefined) fieldsToUpdate.Mi_Calificacion = extraData.Mi_Calificacion;
+    if (extraData.Es_Favorito   !== undefined) fieldsToUpdate.Es_Favorito    = extraData.Es_Favorito;
+    if (extraData.Notas         !== undefined) fieldsToUpdate.Notas          = extraData.Notas;
+
+    await updateRowById(SHEET_ID_BOOKS, 'libro_id', bookId, fieldsToUpdate);
+
+    // Update local state — keep internal key as 'estado' for app logic
+    const updatedBook = { ...books[idx], Estado: newEstado, estado: newEstado, ...extraData };
+    books[idx] = processBooks([updatedBook])[0];
+
+    closeDrawer(); closeStatusModal(); closeModal();
     renderHome();
-    if(activeTab==='books') renderBooks();
-    if(activeTab==='authors') renderAuthors();
-    showToast(`✓ Guardado correctamente`);
-  } catch(err){console.error(err);showToast('⚠ Error: '+err.message,true);hideDrawerLoading();}
+    if (activeTab === 'books') renderBooks();
+    if (activeTab === 'authors') renderAuthors();
+    showToast('✓ Guardado correctamente');
+  } catch(err) {
+    console.error(err);
+    showToast('⚠ Error: ' + err.message, true);
+    hideDrawerLoading();
+  }
 }
 </script>
 </body>
