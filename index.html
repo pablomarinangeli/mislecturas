@@ -301,13 +301,16 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===== GOOGLE AUTH =====
+let _tokenClient = null;
+let _tokenExpiry = 0; // timestamp ms when token expires
+
 function signInWithGoogle() {
   const btn = document.getElementById('btn-google-signin');
   btn.innerHTML = `<svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Conectando...`;
   btn.disabled = true;
   const tryInit = () => {
     if (typeof google === 'undefined' || !google.accounts) { setTimeout(tryInit, 200); return; }
-    const client = google.accounts.oauth2.initTokenClient({
+    _tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID, scope: SCOPES,
       callback: async (tokenResponse) => {
         if (tokenResponse.error) {
@@ -315,6 +318,8 @@ function signInWithGoogle() {
           btn.disabled = false; return;
         }
         googleAccessToken = tokenResponse.access_token;
+        // Token lasts 3600s, refresh at 3300s to be safe
+        _tokenExpiry = Date.now() + (tokenResponse.expires_in || 3600) * 1000 - 300000;
         dataSource = 'google';
         try {
           const p = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${googleAccessToken}` } });
@@ -325,9 +330,27 @@ function signInWithGoogle() {
         await loadFromGoogleSheets();
       }
     });
-    client.requestAccessToken();
+    _tokenClient.requestAccessToken({ prompt: '' });
   };
   tryInit();
+}
+
+// Call this before any write operation to ensure token is fresh
+async function ensureFreshToken() {
+  if (!_tokenClient) return; // manual mode
+  if (Date.now() < _tokenExpiry) return; // still valid
+  // Token expired or about to — request silently (no prompt)
+  return new Promise((resolve, reject) => {
+    const prev = _tokenClient.callback;
+    _tokenClient.callback = (resp) => {
+      _tokenClient.callback = prev; // restore
+      if (resp.error) { reject(new Error('Token refresh failed: ' + resp.error)); return; }
+      googleAccessToken = resp.access_token;
+      _tokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000 - 300000;
+      resolve();
+    };
+    _tokenClient.requestAccessToken({ prompt: '' }); // empty prompt = silent refresh
+  });
 }
 
 function signOut() {
@@ -1043,6 +1066,7 @@ function getNextId(type) {
   const nums=books.map(b=>parseInt((b.libro_id||'').replace('L',''))).filter(n=>!isNaN(n));const next=nums.length?Math.max(...nums)+1:1;return'L'+String(next).padStart(3,'0');
 }
 async function appendRow(sheetId,values) {
+  await ensureFreshToken();
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
   const res=await fetch(url,{method:'POST',headers:{Authorization:`Bearer ${googleAccessToken}`,'Content-Type':'application/json'},body:JSON.stringify({values:[values]})});
   if(!res.ok) throw new Error(`Append error ${res.status}: ${await res.text()}`);
@@ -1072,6 +1096,7 @@ async function getIdColumnLetter(sheetId, idFieldName) {
 }
 
 async function updateRowById(sheetId, idFieldName, idValue, values) {
+  await ensureFreshToken();
   // Find the column where the ID lives
   const idCol = await getIdColumnLetter(sheetId, idFieldName);
   // Find which sheet row has that ID
