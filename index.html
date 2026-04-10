@@ -170,7 +170,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r15</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r16</p>
       </div>
     </div>
   </aside>
@@ -228,17 +228,17 @@
         <div id="year-filter-pills" class="flex flex-wrap gap-2"></div>
         <button onclick="clearYearFilter()" class="text-[10px] font-black text-orange-400 hover:text-orange-600 uppercase tracking-widest transition-colors ml-1">✕ Limpiar</button>
       </div>
-      <!-- Rating filter - static HTML, no template literals -->
+      <!-- Rating filter - multi-select like year filter -->
       <div id="rating-filter-wrap" class="flex items-center gap-3 flex-wrap bg-white border border-orange-50 rounded-[28px] px-6 py-4 w-fit shadow-sm">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calificación:</span>
         <div class="flex items-center gap-1.5" id="rating-filter-btns">
-          <button onclick="setRatingFilter(0)" id="rf-0" class="rf-btn px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-orange-500 text-white shadow-md">Todas</button>
-          <button onclick="setRatingFilter(1)" id="rf-1" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">1 ★</button>
-          <button onclick="setRatingFilter(2)" id="rf-2" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">2 ★</button>
-          <button onclick="setRatingFilter(3)" id="rf-3" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">3 ★</button>
-          <button onclick="setRatingFilter(4)" id="rf-4" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">4 ★</button>
-          <button onclick="setRatingFilter(5)" id="rf-5" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">5 ★</button>
+          <button onclick="toggleRatingFilter(1)" data-rating="1" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">1 ★</button>
+          <button onclick="toggleRatingFilter(2)" data-rating="2" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">2 ★</button>
+          <button onclick="toggleRatingFilter(3)" data-rating="3" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">3 ★</button>
+          <button onclick="toggleRatingFilter(4)" data-rating="4" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">4 ★</button>
+          <button onclick="toggleRatingFilter(5)" data-rating="5" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">5 ★</button>
+          <button id="rf-clear" onclick="clearRatingFilter()" style="display:none" class="text-[10px] font-black text-orange-400 hover:text-orange-600 uppercase tracking-widest transition-colors ml-1">✕ Limpiar</button>
         </div>
       </div>
       <div id="books-grid"></div>
@@ -292,7 +292,7 @@ let googleAccessToken = null, dataSource = 'manual';
 let addBookState = {}, _expFav = false, _expRating = 0;
 // Pagination
 let bookPage = 1, authorPage = 1, pageSize = 24;
-let ratingFilter = 0; // 0 = todos, 1-5 = mínimo de estrellas
+let ratingFilter = new Set(); // empty = todas
 
 // ===== SHOW/HIDE HELPERS (CSS-controlled) =====
 function show(id, displayType = 'flex') { const el = document.getElementById(id); if(el) el.style.display = displayType; }
@@ -777,17 +777,30 @@ function bookNext() { bookPage++;renderBooks(); }
 function authorPrev() { if(authorPage>1){authorPage--;renderAuthors();} }
 function authorNext() { authorPage++;renderAuthors(); }
 
-function setRatingFilter(n) {
-  ratingFilter = n;
+function toggleRatingFilter(n) {
+  if (ratingFilter.has(n)) ratingFilter.delete(n);
+  else ratingFilter.add(n);
   bookPage = 1;
-  document.querySelectorAll('.rf-btn').forEach(btn => {
-    const btnId = parseInt(btn.id.replace('rf-',''));
-    const active = btnId === n;
-    btn.className = btn.className
-      .replace(/bg-orange-500 text-white shadow-md|bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500/g, '').trim()
-      + (active ? ' bg-orange-500 text-white shadow-md' : ' bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500');
-  });
+  renderRatingFilterBtns();
   renderBooks();
+}
+
+function clearRatingFilter() {
+  ratingFilter.clear();
+  bookPage = 1;
+  renderRatingFilterBtns();
+  renderBooks();
+}
+
+function renderRatingFilterBtns() {
+  document.querySelectorAll('.rf-btn').forEach(btn => {
+    const n = parseInt(btn.dataset.rating);
+    const active = ratingFilter.has(n);
+    btn.className = `rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${active ? 'bg-orange-500 text-white border border-orange-500 shadow-md' : 'bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500'}`;
+  });
+  // Show/hide clear button
+  const clr = document.getElementById('rf-clear');
+  if (clr) clr.style.display = ratingFilter.size > 0 ? 'inline-flex' : 'none';
 }
 
 // ===== RENDER BOOKS =====
@@ -797,7 +810,7 @@ function getFilteredBooks() {
     const ms = (b.titulo||'').toLowerCase().includes(s)||(b.Autor||'').toLowerCase().includes(s);
     const mf = bookFilter==='todos'||b.estado===bookFilter;
     const my = selectedYears.size===0||selectedYears.has(String(b.Anio_lectura||'').trim());
-    const mr = ratingFilter===0||(b.rating||0)===ratingFilter;
+    const mr = ratingFilter.size===0||ratingFilter.has(b.rating||0);
     return ms&&mf&&my&&mr;
   });
 }
@@ -1097,7 +1110,7 @@ function setView(mode) {
 }
 function setFilter(f) {
   bookFilter=f; bookPage=1;
-  if(f!=='Leido'&&f!=='todos') { selectedYears.clear(); ratingFilter=0; setRatingFilter(0); }
+  if(f!=='Leido'&&f!=='todos') { selectedYears.clear(); ratingFilter.clear(); renderRatingFilterBtns(); }
   document.querySelectorAll('.pill-filter').forEach(btn=>{
     const a=btn.dataset.filter===f;
     btn.className=`pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all ${a?'bg-orange-500 text-white shadow-xl':'text-slate-400 hover:text-slate-700'}`;
