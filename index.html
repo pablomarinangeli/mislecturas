@@ -170,7 +170,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r16</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r17</p>
       </div>
     </div>
   </aside>
@@ -1481,8 +1481,13 @@ function openStatusModal(bookId) {
 }
 function closeStatusModal() { document.getElementById('status-modal').style.display='none'; document.body.style.overflow=''; }
 async function applyStatusChange(bookId,newEstado) {
-  if(newEstado==='Leido'){closeStatusModal();openReadingExperienceForm(bookId);}
-  else await saveStatusChange(bookId,newEstado,{});
+  if(newEstado==='Leido'){
+    closeStatusModal();
+    openReadingExperienceForm(bookId);
+  } else {
+    closeStatusModal();
+    await saveStatusChange(bookId,newEstado,{});
+  }
 }
 const monthOpts=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 function openReadingExperienceForm(bookId) {
@@ -1602,18 +1607,22 @@ async function saveStatusChange(bookId,newEstado,extraData) {
   showDrawerLoading('Guardando en Google Drive...');
   try {
     const headers=await getSheetHeaders(SHEET_ID_BOOKS);
-    const updated={...books[idx],estado:newEstado,...extraData};
-    const rowValues=buildRowValues(updated,headers);
+    // Build updated object — estado MUST come last to not be overwritten by extraData
+    const base = {...books[idx], ...extraData};
+    base.estado = newEstado; // always force the new estado, overrides everything
+    const rowValues=buildRowValues(base,headers);
+    // Log what we're writing for debugging
+    const estadoCol = headers.indexOf('estado');
+    console.log(`Saving estado="${newEstado}" in col ${estadoCol}, value in row: "${rowValues[estadoCol]}"`);
     await updateRowById(SHEET_ID_BOOKS,'libro_id',bookId,rowValues);
-    // Update local state with normalized data
-    books[idx]=processBooks([updated])[0];
+    // Update local state
+    books[idx]=processBooks([base])[0];
     closeDrawer();closeStatusModal();closeModal();
-    // Re-render all views to reflect changes
     renderHome();
     if(activeTab==='books') renderBooks();
     if(activeTab==='authors') renderAuthors();
     showToast(`✓ Guardado correctamente`);
-  } catch(err){console.error(err);showToast('⚠ Error al actualizar: '+err.message,true);hideDrawerLoading();}
+  } catch(err){console.error(err);showToast('⚠ Error: '+err.message,true);hideDrawerLoading();}
 }
 </script>
 </body>
