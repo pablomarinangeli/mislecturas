@@ -275,7 +275,7 @@ let selectedItem = null, modalType = null, modalHistory = [];
 let googleAccessToken = null, dataSource = 'manual';
 let addBookState = {}, _expFav = false, _expRating = 0;
 // Pagination
-let bookPage = 1, authorPage = 1, pageSize = 20;
+let bookPage = 1, authorPage = 1, pageSize = 24;
 
 // ===== SHOW/HIDE HELPERS (CSS-controlled) =====
 function show(id, displayType = 'flex') { const el = document.getElementById(id); if(el) el.style.display = displayType; }
@@ -718,7 +718,7 @@ function renderHome() {
 function pageSizeSelector(current, onchange) {
   return `<div class="flex items-center gap-2">
     <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest">Mostrar:</span>
-    ${[20,50,'todos'].map(n=>`<button onclick="${onchange}(${n==='todos'?'null':n})"
+    ${[24,48,'todos'].map(n=>`<button onclick="${onchange}(${n==='todos'?'null':n})"
       class="px-4 py-2 rounded-[14px] text-[10px] font-black uppercase tracking-widest transition-all ${(n==='todos'&&current===null)||(n===current)?'bg-orange-500 text-white shadow-md':'bg-white border border-orange-100 text-slate-400 hover:border-orange-300'}">
       ${n}
     </button>`).join('')}
@@ -1007,6 +1007,7 @@ function _renderModal() {
         ${si.ocupacion?`<span class="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">${icons.penTool} ${si.ocupacion}</span>`:''}
         ${wikipediaBtn(si.titulo||si.nombre||'')}
         ${modalType==='book'&&dataSource==='google'&&(si.estado==='wishlist'||si.estado==='pendiente')?`<button onclick="openStatusModal('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Cambiar estado</button>`:''}
+        ${modalType==='book'&&dataSource==='google'&&si.estado==='leido'?`<button onclick="openEditExperience('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-orange-100 hover:bg-orange-500 text-orange-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-orange-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar lectura</button>`:''}
       </div>
     </div>
     ${detail}`;
@@ -1073,40 +1074,44 @@ async function appendRow(sheetId,values) {
   return res.json();
 }
 
-// Find real row number in Sheet by matching libro_id in column A (or wherever it is)
-async function findRowById(sheetId, idValue, idColumn = 'A') {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${idColumn}:${idColumn}`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
-  if (!res.ok) throw new Error(`FindRow error ${res.status}`);
-  const json = await res.json();
-  const rows = json.values || [];
-  // rows[0] is header, data starts at rows[1] → sheet row 2
-  for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] === idValue) return i + 1; // 1-based sheet row number
-  }
-  return -1;
-}
-
-// Find which column contains libro_id in the headers
-async function getIdColumnLetter(sheetId, idFieldName) {
-  const headers = await getSheetHeaders(sheetId);
-  const idx = headers.findIndex(h => h === idFieldName);
-  if (idx === -1) return 'A'; // fallback to first column
-  return String.fromCharCode(65 + idx);
-}
+// Find real row number in Sheet - now handled inside updateRowById directly
 
 async function updateRowById(sheetId, idFieldName, idValue, values) {
   await ensureFreshToken();
-  // Find the column where the ID lives
-  const idCol = await getIdColumnLetter(sheetId, idFieldName);
-  // Find which sheet row has that ID
-  const sheetRow = await findRowById(sheetId, idValue, idCol);
-  if (sheetRow === -1) throw new Error(`Row with ${idFieldName}=${idValue} not found in Sheet`);
-  const endCol = String.fromCharCode(65 + values.length - 1);
-  const range = `A${sheetRow}:${endCol}${sheetRow}`;
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?valueInputOption=USER_ENTERED`;
-  const res = await fetch(url, { method: 'PUT', headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [values] }) });
-  if (!res.ok) throw new Error(`Update error ${res.status}: ${await res.text()}`);
+  // Get headers to find ID column index
+  const headers = await getSheetHeaders(sheetId);
+  const idColIdx = headers.findIndex(h => h === idFieldName);
+  if (idColIdx === -1) throw new Error(`Campo ${idFieldName} no encontrado en headers`);
+
+  // Fetch the ID column to find the row
+  const idColLetter = String.fromCharCode(65 + idColIdx);
+  const colUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${idColLetter}:${idColLetter}`;
+  const colRes = await fetch(colUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+  if (!colRes.ok) throw new Error(`Error buscando columna ID: ${colRes.status}`);
+  const colJson = await colRes.json();
+  const colRows = colJson.values || [];
+  let sheetRow = -1;
+  for (let i = 1; i < colRows.length; i++) {
+    if (colRows[i][0] === idValue) { sheetRow = i + 1; break; }
+  }
+  if (sheetRow === -1) throw new Error(`No se encontró ${idFieldName}=${idValue} en la Sheet`);
+
+  // Use batchUpdate with updateCells (avoids CORS preflight issues with PUT)
+  const endColIdx = values.length - 1;
+  const range = `A${sheetRow}:${String.fromCharCode(65 + endColIdx)}${sheetRow}`;
+
+  // Use values.update with POST via batchUpdate instead of PUT
+  const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`;
+  const batchBody = {
+    valueInputOption: 'USER_ENTERED',
+    data: [{ range, values: [values] }]
+  };
+  const res = await fetch(batchUrl, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(batchBody)
+  });
+  if (!res.ok) throw new Error(`batchUpdate error ${res.status}: ${await res.text()}`);
   return res.json();
 }
 async function getSheetHeaders(sheetId) {
@@ -1433,7 +1438,69 @@ function openReadingExperienceForm(bookId) {
   </div>`);
   _expFav=false; _expRating=0;
 }
-function setExpRating(n) {
+// ===== EDIT READING EXPERIENCE (for already-read books) =====
+function openEditExperience(bookId) {
+  const book = books.find(b => b.libro_id === bookId);
+  if (!book) return;
+  closeModal();
+  const monthOpts2=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const curRating = book.rating || 0;
+  const curFav = book.favorite || false;
+  _expFav = curFav; _expRating = curRating;
+
+  openDrawer(`<div class="p-10 space-y-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-orange-500 font-black text-[10px] uppercase tracking-widest mb-1">Editar experiencia</p>
+        <h2 class="text-2xl font-black text-slate-800 tracking-tighter leading-tight">${book.titulo||''}</h2>
+        <p class="text-orange-400 font-bold text-sm mt-1">${book.Autor||''}</p>
+      </div>
+      <button onclick="closeDrawer()" class="p-3 rounded-2xl text-slate-300 hover:text-slate-600 transition-all">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="exp-form" class="space-y-6" onsubmit="return false">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Mes lectura</label>
+          <select name="Mes_Lectura" class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none">
+            <option value="">-- Mes --</option>
+            ${monthOpts2.map(m=>`<option value="${m}" ${m===book.Mes_Lectura?'selected':''}>${m}</option>`).join('')}
+          </select></div>
+        <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Año lectura</label>
+          <input type="number" name="Anio_lectura" min="1900" max="2099" value="${book.Anio_lectura||new Date().getFullYear()}"
+            class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400"/></div>
+      </div>
+      <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Calificación</label>
+        <div class="flex gap-2" id="exp-star-rating">
+          ${[1,2,3,4,5].map(n=>`<button type="button" onclick="setExpRating(${n})" data-star="${n}" class="star-btn" style="color:${n<=curRating?'#f59e0b':'#e2e8f0'}">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </button>`).join('')}
+        </div>
+        <input type="hidden" name="Mi_Calificacion" id="exp-rating-value" value="${curRating}"/>
+      </div>
+      <div class="flex items-center gap-4">
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">¿Favorito?</label>
+        <button type="button" id="exp-fav-btn" onclick="toggleExpFav()"
+          class="flex items-center gap-2 px-5 py-2.5 rounded-[16px] border-2 font-black text-[11px] uppercase tracking-widest transition-all ${curFav?'bg-rose-500 text-white border-rose-500':'border-slate-100 text-slate-400'}">
+          ${curFav?`<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Sí`:`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> No`}
+        </button>
+        <input type="hidden" name="Es_Favorito" id="exp-fav-value" value="${curFav?'Sí':'No'}"/>
+      </div>
+      <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas personales</label>
+        <textarea name="Notas" rows="4" placeholder="Tus reflexiones..."
+          class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none">${book.Notas||''}</textarea>
+      </div>
+      <button type="button" onclick="submitReadingExp('${bookId}')"
+        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all">
+        Guardar cambios
+      </button>
+    </form>
+  </div>`);
+}
+
+
   _expRating=n;document.getElementById('exp-rating-value').value=n;
   document.querySelectorAll('#exp-star-rating .star-btn').forEach(btn=>{ btn.style.color=parseInt(btn.dataset.star)<=n?'#f59e0b':'#e2e8f0'; });
 }
