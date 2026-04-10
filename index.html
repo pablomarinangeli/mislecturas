@@ -170,7 +170,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r14</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r15</p>
       </div>
     </div>
   </aside>
@@ -234,10 +234,10 @@
         <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calificación:</span>
         <div class="flex items-center gap-1.5" id="rating-filter-btns">
           <button onclick="setRatingFilter(0)" id="rf-0" class="rf-btn px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-orange-500 text-white shadow-md">Todas</button>
-          <button onclick="setRatingFilter(1)" id="rf-1" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">1 ★+</button>
-          <button onclick="setRatingFilter(2)" id="rf-2" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">2 ★+</button>
-          <button onclick="setRatingFilter(3)" id="rf-3" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">3 ★+</button>
-          <button onclick="setRatingFilter(4)" id="rf-4" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">4 ★+</button>
+          <button onclick="setRatingFilter(1)" id="rf-1" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">1 ★</button>
+          <button onclick="setRatingFilter(2)" id="rf-2" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">2 ★</button>
+          <button onclick="setRatingFilter(3)" id="rf-3" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">3 ★</button>
+          <button onclick="setRatingFilter(4)" id="rf-4" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">4 ★</button>
           <button onclick="setRatingFilter(5)" id="rf-5" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">5 ★</button>
         </div>
       </div>
@@ -797,7 +797,7 @@ function getFilteredBooks() {
     const ms = (b.titulo||'').toLowerCase().includes(s)||(b.Autor||'').toLowerCase().includes(s);
     const mf = bookFilter==='todos'||b.estado===bookFilter;
     const my = selectedYears.size===0||selectedYears.has(String(b.Anio_lectura||'').trim());
-    const mr = ratingFilter===0||(b.rating||0)>=ratingFilter;
+    const mr = ratingFilter===0||(b.rating||0)===ratingFilter;
     return ms&&mf&&my&&mr;
   });
 }
