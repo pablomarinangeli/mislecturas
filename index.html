@@ -170,7 +170,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r19</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r21</p>
       </div>
     </div>
   </aside>
@@ -1235,6 +1235,8 @@ function showDrawerLoading(msg) {
 }
 function hideDrawerLoading() { const el=document.getElementById('drawer-loading');if(el)el.remove(); }
 
+const BOOKS_API_KEY = 'AIzaSyA5MOwwwhegkJKvueKCMV-aJ4CZO6bqqx8';
+
 // ===== ADD BOOK FLOW =====
 function openAddBook() { addBookState={}; openDrawer(renderStep1()); }
 function renderStep1() {
@@ -1253,42 +1255,102 @@ function renderStep1() {
   </div>`;
 }
 let _searchTimeout;
-function debounceBookSearch(q) { clearTimeout(_searchTimeout); if(q.length<3)return; _searchTimeout=setTimeout(()=>searchGoogleBooks(q),600); }
-async function searchGoogleBooks(q) {
+function debounceBookSearch(q) { clearTimeout(_searchTimeout); if(q.length<3)return; _searchTimeout=setTimeout(()=>searchBooks(q),600); }
+
+async function searchBooks(q) {
   if(!q||q.length<2)return;
   const c=document.getElementById('book-search-results');
-  c.innerHTML=`<div class="flex items-center gap-3 text-slate-400 py-4"><svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span class="font-bold text-sm">Buscando en Google Books...</span></div>`;
-  try {
-    const res=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10`);
-    const data=await res.json();const items=data.items||[];
-    if(!items.length){c.innerHTML=`<p class="text-slate-400 font-bold text-sm py-4">No se encontraron resultados.</p>`;return;}
-    window._gbooks=items;
-    c.innerHTML=items.map((item,i)=>{
-      const info=item.volumeInfo||{};
-      const thumb=(info.imageLinks?.thumbnail||'').replace('http://','https://');
-      return `<div class="search-result-item flex gap-4 p-4 rounded-[24px] border-2 border-slate-100 bg-white" onclick="selectGoogleBook(${i})">
-        <img src="${thumb||'https://via.placeholder.com/60x80'}" class="w-12 h-16 object-cover rounded-xl shadow-sm flex-shrink-0" onerror="this.src='https://via.placeholder.com/60x80'"/>
-        <div class="min-w-0">
-          <h4 class="font-black text-slate-800 text-sm leading-tight truncate">${info.title||'Sin título'}</h4>
-          <p class="text-orange-500 font-bold text-xs mt-1">${(info.authors||[]).join(', ')}</p>
-          <p class="text-slate-400 font-bold text-[11px] mt-0.5">${(info.publishedDate||'').substring(0,4)}</p>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e){c.innerHTML=`<p class="text-rose-400 font-bold text-sm py-4">Error al buscar. Revisá tu conexión.</p>`;}
+  c.innerHTML=`<div class="flex items-center gap-3 text-slate-400 py-4"><svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span class="font-bold text-sm">Buscando...</span></div>`;
+
+  // Try Google Books first
+  const gbResults = await searchGoogleBooks(q);
+  if (gbResults && gbResults.length > 0) {
+    renderBookResults(gbResults, c);
+    return;
+  }
+
+  // Fallback: Open Library search
+  c.innerHTML=`<div class="flex items-center gap-3 text-slate-400 py-4"><svg class="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span class="font-bold text-sm">Buscando en Open Library...</span></div>`;
+  const olResults = await searchOpenLibrary(q);
+  if (olResults && olResults.length > 0) {
+    renderBookResults(olResults, c);
+    return;
+  }
+
+  c.innerHTML=`<p class="text-slate-400 font-bold text-sm py-4">No se encontraron resultados para "<em>${q}</em>"</p>`;
 }
-function selectGoogleBook(idx) {
-  const info=window._gbooks[idx].volumeInfo||{};
-  const isbn13=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
-  const isbn10=(info.industryIdentifiers||[]).find(x=>x.type==='ISBN_10');
-  addBookState.googleData={
-    titulo:info.title||'',Autor:(info.authors||[]).join(', '),
-    anio_publicacion:(info.publishedDate||'').substring(0,4),
-    idioma_original:info.language||'',genero_libro:(info.categories||[]).join(', '),
-    resumen:(info.description||'').replace(/<[^>]+>/g,''),
-    portada_url:(info.imageLinks?.thumbnail||'').replace('http://','https://'),
-    ISBN:isbn13?isbn13.identifier:(isbn10?isbn10.identifier:''),
-  };
+
+async function searchGoogleBooks(q) {
+  try {
+    const keyParam = BOOKS_API_KEY ? `&key=${BOOKS_API_KEY}` : '';
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=12&langRestrict=${keyParam}`);
+    if (!res.ok || res.status === 429) return null;
+    const data = await res.json();
+    if (!data.items?.length) return null;
+    window._gbooks = data.items;
+    return data.items.map((item, i) => {
+      const info = item.volumeInfo || {};
+      const isbn13 = (info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
+      const isbn10 = (info.industryIdentifiers||[]).find(x=>x.type==='ISBN_10');
+      return {
+        _src: 'google', _idx: i,
+        titulo: info.title || '',
+        Autor: (info.authors||[]).join(', '),
+        anio_publicacion: (info.publishedDate||'').substring(0,4),
+        idioma_original: info.language || '',
+        genero_libro: (info.categories||[]).join(', '),
+        resumen: (info.description||'').replace(/<[^>]+>/g,''),
+        portada_url: (info.imageLinks?.thumbnail||info.imageLinks?.smallThumbnail||'').replace('http://','https://'),
+        ISBN: isbn13 ? isbn13.identifier : (isbn10 ? isbn10.identifier : ''),
+        editorial: info.publisher || '',
+        thumb: (info.imageLinks?.thumbnail||'').replace('http://','https://'),
+      };
+    });
+  } catch(e) { console.warn('Google Books error:', e); return null; }
+}
+
+async function searchOpenLibrary(q) {
+  try {
+    const res = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=12&fields=key,title,author_name,first_publish_year,isbn,cover_i,language,subject`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.docs?.length) return null;
+    return data.docs.map((doc, i) => {
+      const cover = doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : '';
+      return {
+        _src: 'openlibrary', _idx: i,
+        titulo: doc.title || '',
+        Autor: (doc.author_name||[]).slice(0,2).join(', '),
+        anio_publicacion: String(doc.first_publish_year||''),
+        idioma_original: (doc.language||[])[0] || '',
+        genero_libro: (doc.subject||[]).slice(0,2).join(', '),
+        resumen: '',
+        portada_url: cover,
+        ISBN: (doc.isbn||[])[0] || '',
+        editorial: '',
+        thumb: cover,
+      };
+    });
+  } catch(e) { console.warn('Open Library error:', e); return null; }
+}
+
+function renderBookResults(results, container) {
+  window._searchResults = results;
+  container.innerHTML = results.map((r, i) => `
+    <div class="search-result-item flex gap-4 p-4 rounded-[24px] border-2 border-slate-100 bg-white" onclick="selectSearchResult(${i})">
+      <img src="${r.thumb||'https://via.placeholder.com/60x80'}" class="w-12 h-16 object-cover rounded-xl shadow-sm flex-shrink-0" onerror="this.src='https://via.placeholder.com/60x80'"/>
+      <div class="min-w-0">
+        <h4 class="font-black text-slate-800 text-sm leading-tight truncate">${r.titulo||'Sin título'}</h4>
+        <p class="text-orange-500 font-bold text-xs mt-1">${r.Autor||''}</p>
+        <p class="text-slate-400 font-bold text-[11px] mt-0.5">${r.anio_publicacion||''}</p>
+      </div>
+    </div>`).join('');
+}
+
+function selectSearchResult(i) {
+  const r = window._searchResults[i];
+  if (!r) return;
+  addBookState.googleData = r;
   renderStep2();
 }
 function renderStep2() {
