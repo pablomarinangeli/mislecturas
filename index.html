@@ -1500,7 +1500,7 @@ function openEditExperience(bookId) {
   </div>`);
 }
 
-
+function setExpRating(n) {
   _expRating=n;document.getElementById('exp-rating-value').value=n;
   document.querySelectorAll('#exp-star-rating .star-btn').forEach(btn=>{ btn.style.color=parseInt(btn.dataset.star)<=n?'#f59e0b':'#e2e8f0'; });
 }
