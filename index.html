@@ -466,13 +466,21 @@ function showToast(msg, isError = false) {
 
 // ===== DATA PROCESSING =====
 function processBooks(data) {
-  return data.map((b, i) => ({
-    ...b,
-    libro_id: b.libro_id || `book-${i}`,
-    rating: parseInt(b.Mi_Calificacion) || 0,
-    favorite: ['sí','si'].includes((b.Es_Favorito||'').toLowerCase()),
-    estado: b.estado || (b.Anio_lectura ? 'leido' : 'pendiente')
-  }));
+  return data.map((b, i) => {
+    // Estado business rule: null/empty → pendiente, 'deseado' → wishlist
+    let estado = (b.estado || '').toLowerCase().trim();
+    if (!estado || estado === 'null') estado = 'pendiente';
+    if (estado === 'deseado') estado = 'wishlist';
+    // Keep leido, pendiente, wishlist as-is
+    if (!['leido','pendiente','wishlist'].includes(estado)) estado = 'pendiente';
+    return {
+      ...b,
+      libro_id: b.libro_id || `book-${i}`,
+      rating: parseInt(b.Mi_Calificacion) || 0,
+      favorite: ['sí','si'].includes((b.Es_Favorito||'').toLowerCase()),
+      estado
+    };
+  });
 }
 function processAuthors(data) {
   return data.map((a, i) => ({
@@ -1077,42 +1085,50 @@ async function appendRow(sheetId,values) {
 // Find real row number in Sheet - now handled inside updateRowById directly
 
 // Convert 0-based column index to A1 notation (supports AA, AB, etc.)
-function colToLetter(idx) {
-  let letter = '';
-  idx += 1; // 1-based
-  while (idx > 0) {
-    const rem = (idx - 1) % 26;
-    letter = String.fromCharCode(65 + rem) + letter;
-    idx = Math.floor((idx - 1) / 26);
-  }
-  return letter;
+// Get the first sheet name from a spreadsheet
+async function getFirstSheetName(sheetId) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets.properties.title`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+  if (!res.ok) return 'Sheet1';
+  const json = await res.json();
+  return json.sheets?.[0]?.properties?.title || 'Sheet1';
 }
 
 async function updateRowById(sheetId, idFieldName, idValue, values) {
   await ensureFreshToken();
-  // Get headers to find ID column index
+
+  // Step 1: Get all data to find the row number by ID
+  const allUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A:A`;
+  const allRes = await fetch(allUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+  if (!allRes.ok) throw new Error(`Error leyendo columna A: ${allRes.status}`);
+  const allJson = await allRes.json();
+  const allRows = allJson.values || [];
+
+  // Find header row to get ID column index
   const headers = await getSheetHeaders(sheetId);
   const idColIdx = headers.findIndex(h => h === idFieldName);
-  if (idColIdx === -1) throw new Error(`Campo ${idFieldName} no encontrado en headers`);
+  if (idColIdx === -1) throw new Error(`Campo "${idFieldName}" no encontrado`);
 
-  // Fetch the ID column to find the row
-  const idColLetter = colToLetter(idColIdx);
-  const colUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${idColLetter}:${idColLetter}`;
-  const colRes = await fetch(colUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
-  if (!colRes.ok) throw new Error(`Error buscando columna ID: ${colRes.status}`);
-  const colJson = await colRes.json();
-  const colRows = colJson.values || [];
+  // Read the ID column
+  const idColUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/R1C${idColIdx+1}:R10000C${idColIdx+1}?majorDimension=COLUMNS`;
+  const idColRes = await fetch(idColUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+  if (!idColRes.ok) throw new Error(`Error leyendo columna ID: ${idColRes.status}`);
+  const idColJson = await idColRes.json();
+  const idColVals = (idColJson.values && idColJson.values[0]) ? idColJson.values[0] : [];
+
+  // Row 0 = header, find our ID starting from index 1
   let sheetRow = -1;
-  for (let i = 1; i < colRows.length; i++) {
-    if (colRows[i][0] === idValue) { sheetRow = i + 1; break; }
+  for (let i = 1; i < idColVals.length; i++) {
+    if (idColVals[i] === idValue) { sheetRow = i + 1; break; } // +1 for 1-based, +1 for header
   }
-  if (sheetRow === -1) throw new Error(`No se encontró ${idFieldName}=${idValue} en la Sheet`);
+  if (sheetRow === -1) throw new Error(`Libro/Autor con ID "${idValue}" no encontrado en la hoja`);
 
-  // Build range using correct column letters
-  const endColLetter = colToLetter(values.length - 1);
-  const range = `A${sheetRow}:${endColLetter}${sheetRow}`;
-
+  // Step 2: Get the sheet name for the range notation
+  const sheetName = await getFirstSheetName(sheetId);
+  // Use open-ended row range — just specify the row, no end column needed
+  // batchUpdate with a named range using R1C1 notation avoids column letter issues
   const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`;
+  const range = `'${sheetName}'!${sheetRow}:${sheetRow}`; // full row range — safest approach
   const batchBody = {
     valueInputOption: 'USER_ENTERED',
     data: [{ range, values: [values] }]
@@ -1125,6 +1141,7 @@ async function updateRowById(sheetId, idFieldName, idValue, values) {
   if (!res.ok) throw new Error(`batchUpdate error ${res.status}: ${await res.text()}`);
   return res.json();
 }
+
 async function getSheetHeaders(sheetId) {
   const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/A1:ZZ1`;
   const res=await fetch(url,{headers:{Authorization:`Bearer ${googleAccessToken}`}});
@@ -1392,7 +1409,8 @@ async function saveAuthor(authorData) {
 // ===== STATUS CHANGE =====
 function openStatusModal(bookId) {
   const book=books.find(b=>b.libro_id===bookId);if(!book)return;
-  const curr=book.estado||'wishlist';
+  // Normalize estado for transition logic
+  const curr = book.estado || 'pendiente';
   const trans={wishlist:['pendiente','leido'],pendiente:['leido'],leido:[]};
   const avail=trans[curr]||[];
   if(!avail.length){showToast('Este libro ya está en su estado final (Leído)');return;}
@@ -1402,7 +1420,7 @@ function openStatusModal(bookId) {
       <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Cambiar estado</p>
         <h3 class="text-2xl font-black text-slate-800 tracking-tighter leading-tight">${book.titulo||''}</h3>
         <p class="text-orange-500 font-bold text-sm mt-1">${book.Autor||''}</p></div>
-      <div><p class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3">Estado actual: <span class="text-slate-500">${curr}</span></p>
+      <div><p class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3">Estado actual: <span class="text-slate-500">${curr==='wishlist'?'deseado':curr}</span></p>
         <div class="space-y-3">${avail.map(s=>`<button onclick="applyStatusChange('${bookId}','${s}')" class="w-full py-4 rounded-[20px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-100 transition-all">Cambiar a ${labels[s]}</button>`).join('')}</div></div>
       <button onclick="closeStatusModal()" class="w-full py-3 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">Cancelar</button>
     </div>`;
