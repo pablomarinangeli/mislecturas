@@ -228,20 +228,17 @@
         <div id="year-filter-pills" class="flex flex-wrap gap-2"></div>
         <button onclick="clearYearFilter()" class="text-[10px] font-black text-orange-400 hover:text-orange-600 uppercase tracking-widest transition-colors ml-1">✕ Limpiar</button>
       </div>
-      <!-- Rating filter -->
+      <!-- Rating filter - static HTML, no template literals -->
       <div id="rating-filter-wrap" class="flex items-center gap-3 flex-wrap bg-white border border-orange-50 rounded-[28px] px-6 py-4 w-fit shadow-sm">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calificación:</span>
-        <div class="flex items-center gap-1">
-          <button onclick="setRatingFilter(0)" id="rf-0"
-            class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-orange-500 text-white shadow-md">
-            Todas
-          </button>
-          ${[1,2,3,4,5].map(n=>`
-          <button onclick="setRatingFilter(${n})" id="rf-${n}"
-            class="flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">
-            ${n}<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>+
-          </button>`).join('')}
+        <div class="flex items-center gap-1.5" id="rating-filter-btns">
+          <button onclick="setRatingFilter(0)" id="rf-0" class="rf-btn px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-orange-500 text-white shadow-md">Todas</button>
+          <button onclick="setRatingFilter(1)" id="rf-1" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">1 ★+</button>
+          <button onclick="setRatingFilter(2)" id="rf-2" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">2 ★+</button>
+          <button onclick="setRatingFilter(3)" id="rf-3" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">3 ★+</button>
+          <button onclick="setRatingFilter(4)" id="rf-4" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">4 ★+</button>
+          <button onclick="setRatingFilter(5)" id="rf-5" class="rf-btn flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">5 ★</button>
         </div>
       </div>
       <div id="books-grid"></div>
@@ -391,6 +388,8 @@ async function loadFromGoogleSheets() {
     document.getElementById('loading-msg').textContent = 'Cargando libros desde Google Drive...';
     const booksData = await fetchSheet(SHEET_ID_BOOKS);
     books = processBooks(booksData);
+    // Diagnostic: log first 3 books estado values to console
+    console.log('Estado sample:', books.slice(0,3).map(b=>({id:b.libro_id, raw: booksData[0] ? Object.keys(booksData[0]).find(k=>k.toLowerCase()==='estado') : '?', estado:b.estado})));
     document.getElementById('loading-msg').textContent = 'Cargando autores desde Google Drive...';
     const authorsData = await fetchSheet(SHEET_ID_AUTHORS);
     authors = processAuthors(authorsData);
@@ -489,17 +488,24 @@ function normalizeEstado(raw) {
   const s = (raw || '').toLowerCase().trim();
   if (s === 'leido' || s === 'leído') return 'Leido';
   if (s === 'deseado' || s === 'wishlist') return 'Deseado';
-  return 'Pendiente'; // null, empty, 'pendiente', anything else
+  if (s === 'pendiente') return 'Pendiente';
+  // null, empty, unknown → Pendiente
+  return 'Pendiente';
 }
 
 function processBooks(data) {
-  return data.map((b, i) => ({
-    ...b,
-    libro_id: b.libro_id || `book-${i}`,
-    rating: parseInt(b.Mi_Calificacion) || 0,
-    favorite: ['sí','si'].includes((b.Es_Favorito||'').toLowerCase()),
-    estado: normalizeEstado(b.estado)
-  }));
+  return data.map((b, i) => {
+    // Find estado field case-insensitively (could be 'estado', 'Estado', 'ESTADO')
+    const estadoKey = Object.keys(b).find(k => k.toLowerCase() === 'estado') || 'estado';
+    const rawEstado = b[estadoKey] || '';
+    return {
+      ...b,
+      libro_id: b.libro_id || `book-${i}`,
+      rating: parseInt(b.Mi_Calificacion) || 0,
+      favorite: ['sí','si'].includes((b.Es_Favorito||'').toLowerCase()),
+      estado: normalizeEstado(rawEstado)
+    };
+  });
 }
 function processAuthors(data) {
   return data.map((a, i) => ({
@@ -774,17 +780,12 @@ function authorNext() { authorPage++;renderAuthors(); }
 function setRatingFilter(n) {
   ratingFilter = n;
   bookPage = 1;
-  // Update button styles
-  [0,1,2,3,4,5].forEach(i => {
-    const btn = document.getElementById(`rf-${i}`);
-    if (!btn) return;
-    if (i === n) {
-      btn.className = btn.className.replace(/bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500|bg-orange-500 text-white shadow-md/, '');
-      btn.className += ' bg-orange-500 text-white shadow-md';
-    } else {
-      btn.className = btn.className.replace(/bg-orange-500 text-white shadow-md/, '');
-      btn.className += (i === 0 ? ' bg-white border border-slate-200 text-slate-400' : ' bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500');
-    }
+  document.querySelectorAll('.rf-btn').forEach(btn => {
+    const btnId = parseInt(btn.id.replace('rf-',''));
+    const active = btnId === n;
+    btn.className = btn.className
+      .replace(/bg-orange-500 text-white shadow-md|bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500/g, '').trim()
+      + (active ? ' bg-orange-500 text-white shadow-md' : ' bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500');
   });
   renderBooks();
 }
