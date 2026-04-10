@@ -213,9 +213,9 @@
       <div class="flex flex-wrap items-center justify-between gap-4">
         <div class="flex flex-wrap gap-3 p-2 bg-white border border-orange-50 rounded-[32px] w-fit shadow-sm">
           <button data-filter="todos" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all bg-orange-500 text-white shadow-xl" onclick="setFilter('todos')">Todos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-white/20 text-white" id="count-todos">0</span></button>
-          <button data-filter="leido" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('leido')">Leídos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-leido">0</span></button>
-          <button data-filter="pendiente" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('pendiente')">Pendientes <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-pendiente">0</span></button>
-          <button data-filter="wishlist" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('wishlist')">Deseados <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-wishlist">0</span></button>
+          <button data-filter="Leido" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('Leido')">Leídos <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-leido">0</span></button>
+          <button data-filter="Pendiente" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('Pendiente')">Pendientes <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-pendiente">0</span></button>
+          <button data-filter="Deseado" class="pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all text-slate-400 hover:text-slate-700" onclick="setFilter('Deseado')">Deseados <span class="px-2 py-0.5 rounded-lg text-[9px] bg-slate-100 text-slate-400" id="count-wishlist">0</span></button>
         </div>
         <button id="btn-add-book" onclick="openAddBook()" class="items-center gap-3 bg-orange-500 hover:bg-orange-600 text-white font-black text-[11px] uppercase tracking-widest px-7 py-4 rounded-[24px] shadow-lg shadow-orange-100 transition-all hover:-translate-y-0.5">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -470,10 +470,9 @@ function showToast(msg, isError = false) {
 // ===== DATA PROCESSING =====
 function normalizeEstado(raw) {
   const s = (raw || '').toLowerCase().trim();
-  if (!s || s === 'null') return 'pendiente';
-  if (s === 'deseado' || s === 'wishlist') return 'wishlist';
-  if (s === 'leido' || s === 'leído') return 'leido';
-  return 'pendiente'; // fallback
+  if (s === 'leido' || s === 'leído') return 'Leido';
+  if (s === 'deseado' || s === 'wishlist') return 'Deseado';
+  return 'Pendiente'; // null, empty, 'pendiente', anything else
 }
 
 function processBooks(data) {
@@ -609,9 +608,9 @@ function getStats() {
   return {
     rankedAuthors:top(counts.authors), rankedCountries:top(counts.countries), rankedGenres:top(counts.genres),
     genders:counts.genders,
-    totalLeidos:books.filter(b=>b.estado==='leido').length,
-    totalPendientes:books.filter(b=>b.estado==='pendiente').length,
-    totalWishlist:books.filter(b=>b.estado==='wishlist').length,
+    totalLeidos:books.filter(b=>b.estado==='Leido').length,
+    totalPendientes:books.filter(b=>b.estado==='Pendiente').length,
+    totalWishlist:books.filter(b=>b.estado==='Deseado').length,
     favBooks:books.filter(b=>b.favorite), favAuthors:authors.filter(a=>a.favorite)
   };
 }
@@ -703,7 +702,7 @@ function renderHome() {
 
   // Year chart
   const yearCounts = {};
-  books.filter(b=>b.estado==='leido'&&b.Anio_lectura).forEach(b=>{const y=String(b.Anio_lectura).trim();if(y)yearCounts[y]=(yearCounts[y]||0)+1;});
+  books.filter(b=>b.estado==='Leido'&&b.Anio_lectura).forEach(b=>{const y=String(b.Anio_lectura).trim();if(y)yearCounts[y]=(yearCounts[y]||0)+1;});
   const entries = Object.entries(yearCounts).sort(([a],[b])=>Number(a)-Number(b));
   if (entries.length > 0) {
     const maxV = Math.max(...entries.map(([,v])=>v));
@@ -787,7 +786,7 @@ function renderBooks() {
       ${b.favorite?`<div class="absolute top-10 left-10 z-10 bg-rose-500 text-white p-3 rounded-full shadow-lg border-2 border-white">${icons.heartFill}</div>`:''}
       <div class="h-80 rounded-[40px] overflow-hidden mb-8 relative shadow-lg">
         <img src="${b.portada_url||''}" class="w-full h-full object-cover transition-transform duration-1000" onerror="this.src='https://via.placeholder.com/300x450'" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"/>
-        <div class="absolute top-5 right-5 bg-white/95 px-4 py-2 rounded-full text-[9px] font-black uppercase text-slate-800 shadow-xl">${b.estado==='wishlist'?'deseado':b.estado||''}</div>
+        <div class="absolute top-5 right-5 bg-white/95 px-4 py-2 rounded-full text-[9px] font-black uppercase text-slate-800 shadow-xl">${b.estado||''}</div>
       </div>
       <div class="text-center px-4">
         <h4 class="font-black text-slate-800 text-xl mb-2 truncate">${b.titulo||''}</h4>
@@ -825,13 +824,13 @@ function renderBooks() {
 }
 
 // ===== YEAR FILTER =====
-function filterByYear(year) { setTab('books'); setFilter('leido'); selectedYears=new Set([year]); renderYearFilterPills(); renderBooks(); }
+function filterByYear(year) { setTab('books'); setFilter('Leido'); selectedYears=new Set([year]); renderYearFilterPills(); renderBooks(); }
 function clearYearFilter() { selectedYears.clear(); renderYearFilterPills(); renderBooks(); }
 function toggleYearFilter(year) { if(selectedYears.has(year)) selectedYears.delete(year); else selectedYears.add(year); renderYearFilterPills(); renderBooks(); }
 function renderYearFilterPills() {
   const wrap = document.getElementById('year-filter-wrap');
-  if (bookFilter!=='leido'&&bookFilter!=='todos') { wrap.style.display='none'; return; }
-  const years=[...new Set(books.filter(b=>b.estado==='leido'&&b.Anio_lectura).map(b=>String(b.Anio_lectura).trim()).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
+  if (bookFilter!=='Leido'&&bookFilter!=='todos') { wrap.style.display='none'; return; }
+  const years=[...new Set(books.filter(b=>b.estado==='Leido'&&b.Anio_lectura).map(b=>String(b.Anio_lectura).trim()).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
   if (!years.length) { wrap.style.display='none'; return; }
   wrap.style.display='flex';
   document.getElementById('year-filter-pills').innerHTML=years.map(y=>`<button onclick="toggleYearFilter('${y}')" class="year-pill px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${selectedYears.has(y)?'active':'border-slate-200 text-slate-400 hover:border-orange-300'}">${y}</button>`).join('');
@@ -1017,8 +1016,8 @@ function _renderModal() {
         ${si.Autor?authorLinkBtn(si.Autor):''}
         ${si.ocupacion?`<span class="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">${icons.penTool} ${si.ocupacion}</span>`:''}
         ${wikipediaBtn(si.titulo||si.nombre||'')}
-        ${modalType==='book'&&dataSource==='google'&&(si.estado==='wishlist'||si.estado==='pendiente')?`<button onclick="openStatusModal('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Cambiar estado</button>`:''}
-        ${modalType==='book'&&dataSource==='google'&&si.estado==='leido'?`<button onclick="openEditExperience('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-orange-100 hover:bg-orange-500 text-orange-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-orange-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar lectura</button>`:''}
+        ${modalType==='book'&&dataSource==='google'&&(si.estado==='Deseado'||si.estado==='Pendiente')?`<button onclick="openStatusModal('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Cambiar estado</button>`:''}
+        ${modalType==='book'&&dataSource==='google'&&si.estado==='Leido'?`<button onclick="openEditExperience('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-orange-100 hover:bg-orange-500 text-orange-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-orange-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar lectura</button>`:''}
       </div>
     </div>
     ${detail}`;
@@ -1061,7 +1060,7 @@ function setView(mode) {
 }
 function setFilter(f) {
   bookFilter=f; bookPage=1;
-  if(f!=='leido'&&f!=='todos') selectedYears.clear();
+  if(f!=='Leido'&&f!=='todos') selectedYears.clear();
   document.querySelectorAll('.pill-filter').forEach(btn=>{
     const a=btn.dataset.filter===f;
     btn.className=`pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all ${a?'bg-orange-500 text-white shadow-xl':'text-slate-400 hover:text-slate-700'}`;
@@ -1257,7 +1256,7 @@ function renderStep2() {
       <div>
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Estado *</label>
         <div class="flex gap-3">
-          ${['leido','pendiente','wishlist'].map(s=>`<button type="button" onclick="selectEstado('${s}')" data-estado="${s}" class="estado-btn flex-1 py-3 rounded-[18px] border-2 font-black text-[11px] uppercase tracking-widest transition-all border-slate-100 text-slate-400 hover:border-orange-300">${s==='leido'?'✓ Leído':s==='pendiente'?'📚 Pendiente':'⭐ Wishlist'}</button>`).join('')}
+          ${['Leido','Pendiente','Deseado'].map(s=>`<button type="button" onclick="selectEstado('${s}')" data-estado="${s}" class="estado-btn flex-1 py-3 rounded-[18px] border-2 font-black text-[11px] uppercase tracking-widest transition-all border-slate-100 text-slate-400 hover:border-orange-300">${s==='Leido'?'✓ Leído':s==='Pendiente'?'📚 Pendiente':'⭐ Deseado'}</button>`).join('')}
         </div>
       </div>
       <div id="experiencia-section" style="display:none" class="space-y-5 p-6 bg-orange-50/60 rounded-[28px] border border-orange-100">
@@ -1294,7 +1293,7 @@ function selectEstado(estado) {
     const a=btn.dataset.estado===estado;
     btn.className=`estado-btn flex-1 py-3 rounded-[18px] border-2 font-black text-[11px] uppercase tracking-widest transition-all ${a?'bg-orange-500 text-white border-orange-500 shadow-lg':'border-slate-100 text-slate-400 hover:border-orange-300'}`;
   });
-  document.getElementById('experiencia-section').style.display=estado==='leido'?'block':'none';
+  document.getElementById('experiencia-section').style.display=estado==='Leido'?'block':'none';
 }
 function setRating(n) {
   addBookState.rating=n; document.getElementById('rating-value').value=n;
@@ -1317,9 +1316,9 @@ async function submitAddBook() {
   if(!data.titulo){showToast('⚠ El título es requerido',true);return;}
   if(!data.Autor){showToast('⚠ El autor es requerido',true);return;}
   if(!addBookState.estado){showToast('⚠ Seleccioná un estado',true);return;}
-  data.Mi_Calificacion=addBookState.estado==='leido'?(addBookState.rating||0):'';
-  data.Es_Favorito=addBookState.estado==='leido'?(addBookState.favorito?'Sí':'No'):'No';
-  if(addBookState.estado!=='leido'){data.Anio_lectura='';data.Mes_Lectura='';data.Notas='';}
+  data.Mi_Calificacion=addBookState.estado==='Leido'?(addBookState.rating||0):'';
+  data.Es_Favorito=addBookState.estado==='Leido'?(addBookState.favorito?'Sí':'No'):'No';
+  if(addBookState.estado!=='Leido'){data.Anio_lectura='';data.Mes_Lectura='';data.Notas='';}
   data.libro_id=getNextId('book');
   showDrawerLoading('Verificando autor...');
   try {
@@ -1413,17 +1412,17 @@ async function saveAuthor(authorData) {
 function openStatusModal(bookId) {
   const book=books.find(b=>b.libro_id===bookId);if(!book)return;
   // Normalize estado for transition logic
-  const curr = book.estado || 'pendiente';
-  const trans={wishlist:['pendiente','leido'],pendiente:['leido'],leido:[]};
+  const curr = book.estado || 'Pendiente';
+  const trans={'Deseado':['Pendiente','Leido'],'Pendiente':['Leido'],'Leido':[]};
   const avail=trans[curr]||[];
   if(!avail.length){showToast('Este libro ya está en su estado final (Leído)');return;}
-  const labels={pendiente:'📚 Pendiente',leido:'✓ Leído'};
+  const labels={'Pendiente':'📚 Pendiente','Leido':'✓ Leído'};
   document.getElementById('status-modal-content').innerHTML=`
     <div class="space-y-8">
       <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Cambiar estado</p>
         <h3 class="text-2xl font-black text-slate-800 tracking-tighter leading-tight">${book.titulo||''}</h3>
         <p class="text-orange-500 font-bold text-sm mt-1">${book.Autor||''}</p></div>
-      <div><p class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3">Estado actual: <span class="text-slate-500">${curr==='wishlist'?'deseado':curr}</span></p>
+      <div><p class="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3">Estado actual: <span class="text-slate-500">${curr}</span></p>
         <div class="space-y-3">${avail.map(s=>`<button onclick="applyStatusChange('${bookId}','${s}')" class="w-full py-4 rounded-[20px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-100 transition-all">Cambiar a ${labels[s]}</button>`).join('')}</div></div>
       <button onclick="closeStatusModal()" class="w-full py-3 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">Cancelar</button>
     </div>`;
@@ -1432,7 +1431,7 @@ function openStatusModal(bookId) {
 }
 function closeStatusModal() { document.getElementById('status-modal').style.display='none'; document.body.style.overflow=''; }
 async function applyStatusChange(bookId,newEstado) {
-  if(newEstado==='leido'){closeStatusModal();openReadingExperienceForm(bookId);}
+  if(newEstado==='Leido'){closeStatusModal();openReadingExperienceForm(bookId);}
   else await saveStatusChange(bookId,newEstado,{});
 }
 const monthOpts=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
@@ -1546,7 +1545,7 @@ async function submitReadingExp(bookId) {
   const form=document.getElementById('exp-form');
   const data={};form.querySelectorAll('input,textarea,select').forEach(el=>{if(el.name)data[el.name]=el.value;});
   data.Mi_Calificacion=_expRating||0;data.Es_Favorito=_expFav?'Sí':'No';
-  await saveStatusChange(bookId,'leido',data);
+  await saveStatusChange(bookId,'Leido',data);
 }
 async function saveStatusChange(bookId,newEstado,extraData) {
   const idx=books.findIndex(b=>b.libro_id===bookId);if(idx===-1)return;
