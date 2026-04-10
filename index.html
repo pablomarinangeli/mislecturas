@@ -228,6 +228,22 @@
         <div id="year-filter-pills" class="flex flex-wrap gap-2"></div>
         <button onclick="clearYearFilter()" class="text-[10px] font-black text-orange-400 hover:text-orange-600 uppercase tracking-widest transition-colors ml-1">✕ Limpiar</button>
       </div>
+      <!-- Rating filter -->
+      <div id="rating-filter-wrap" class="flex items-center gap-3 flex-wrap bg-white border border-orange-50 rounded-[28px] px-6 py-4 w-fit shadow-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#f59e0b"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Calificación:</span>
+        <div class="flex items-center gap-1">
+          <button onclick="setRatingFilter(0)" id="rf-0"
+            class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all bg-orange-500 text-white shadow-md">
+            Todas
+          </button>
+          ${[1,2,3,4,5].map(n=>`
+          <button onclick="setRatingFilter(${n})" id="rf-${n}"
+            class="flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">
+            ${n}<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>+
+          </button>`).join('')}
+        </div>
+      </div>
       <div id="books-grid"></div>
       <div id="books-pagination" class="flex items-center justify-between mt-8"></div>
     </div>
@@ -279,6 +295,7 @@ let googleAccessToken = null, dataSource = 'manual';
 let addBookState = {}, _expFav = false, _expRating = 0;
 // Pagination
 let bookPage = 1, authorPage = 1, pageSize = 24;
+let ratingFilter = 0; // 0 = todos, 1-5 = mínimo de estrellas
 
 // ===== SHOW/HIDE HELPERS (CSS-controlled) =====
 function show(id, displayType = 'flex') { const el = document.getElementById(id); if(el) el.style.display = displayType; }
@@ -754,6 +771,24 @@ function bookNext() { bookPage++;renderBooks(); }
 function authorPrev() { if(authorPage>1){authorPage--;renderAuthors();} }
 function authorNext() { authorPage++;renderAuthors(); }
 
+function setRatingFilter(n) {
+  ratingFilter = n;
+  bookPage = 1;
+  // Update button styles
+  [0,1,2,3,4,5].forEach(i => {
+    const btn = document.getElementById(`rf-${i}`);
+    if (!btn) return;
+    if (i === n) {
+      btn.className = btn.className.replace(/bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500|bg-orange-500 text-white shadow-md/, '');
+      btn.className += ' bg-orange-500 text-white shadow-md';
+    } else {
+      btn.className = btn.className.replace(/bg-orange-500 text-white shadow-md/, '');
+      btn.className += (i === 0 ? ' bg-white border border-slate-200 text-slate-400' : ' bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500');
+    }
+  });
+  renderBooks();
+}
+
 // ===== RENDER BOOKS =====
 function getFilteredBooks() {
   const s = searchTerm.toLowerCase();
@@ -761,7 +796,8 @@ function getFilteredBooks() {
     const ms = (b.titulo||'').toLowerCase().includes(s)||(b.Autor||'').toLowerCase().includes(s);
     const mf = bookFilter==='todos'||b.estado===bookFilter;
     const my = selectedYears.size===0||selectedYears.has(String(b.Anio_lectura||'').trim());
-    return ms&&mf&&my;
+    const mr = ratingFilter===0||(b.rating||0)>=ratingFilter;
+    return ms&&mf&&my&&mr;
   });
 }
 
@@ -1060,7 +1096,7 @@ function setView(mode) {
 }
 function setFilter(f) {
   bookFilter=f; bookPage=1;
-  if(f!=='Leido'&&f!=='todos') selectedYears.clear();
+  if(f!=='Leido'&&f!=='todos') { selectedYears.clear(); ratingFilter=0; setRatingFilter(0); }
   document.querySelectorAll('.pill-filter').forEach(btn=>{
     const a=btn.dataset.filter===f;
     btn.className=`pill-filter px-8 py-3 rounded-[24px] text-[10px] font-black uppercase tracking-widest flex items-center gap-3 transition-all ${a?'bg-orange-500 text-white shadow-xl':'text-slate-400 hover:text-slate-700'}`;
