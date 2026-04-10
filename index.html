@@ -1076,6 +1076,18 @@ async function appendRow(sheetId,values) {
 
 // Find real row number in Sheet - now handled inside updateRowById directly
 
+// Convert 0-based column index to A1 notation (supports AA, AB, etc.)
+function colToLetter(idx) {
+  let letter = '';
+  idx += 1; // 1-based
+  while (idx > 0) {
+    const rem = (idx - 1) % 26;
+    letter = String.fromCharCode(65 + rem) + letter;
+    idx = Math.floor((idx - 1) / 26);
+  }
+  return letter;
+}
+
 async function updateRowById(sheetId, idFieldName, idValue, values) {
   await ensureFreshToken();
   // Get headers to find ID column index
@@ -1084,7 +1096,7 @@ async function updateRowById(sheetId, idFieldName, idValue, values) {
   if (idColIdx === -1) throw new Error(`Campo ${idFieldName} no encontrado en headers`);
 
   // Fetch the ID column to find the row
-  const idColLetter = String.fromCharCode(65 + idColIdx);
+  const idColLetter = colToLetter(idColIdx);
   const colUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${idColLetter}:${idColLetter}`;
   const colRes = await fetch(colUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
   if (!colRes.ok) throw new Error(`Error buscando columna ID: ${colRes.status}`);
@@ -1096,11 +1108,10 @@ async function updateRowById(sheetId, idFieldName, idValue, values) {
   }
   if (sheetRow === -1) throw new Error(`No se encontró ${idFieldName}=${idValue} en la Sheet`);
 
-  // Use batchUpdate with updateCells (avoids CORS preflight issues with PUT)
-  const endColIdx = values.length - 1;
-  const range = `A${sheetRow}:${String.fromCharCode(65 + endColIdx)}${sheetRow}`;
+  // Build range using correct column letters
+  const endColLetter = colToLetter(values.length - 1);
+  const range = `A${sheetRow}:${endColLetter}${sheetRow}`;
 
-  // Use values.update with POST via batchUpdate instead of PUT
   const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`;
   const batchBody = {
     valueInputOption: 'USER_ENTERED',
