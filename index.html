@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2025.04.10-r28</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r001</p>
   </div>
 </div>
 
@@ -119,6 +119,13 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
       </div>
       <span>MIS LECTURAS</span>
+    </div>
+    <!-- Profile photo — full width between logo and nav -->
+    <div class="w-full rounded-[28px] overflow-hidden shadow-lg border border-orange-50" style="aspect-ratio:1/1">
+      <img src="https://drive.google.com/thumbnail?id=19sh3rb5W-sbCCEb91dOa2clGS-IwgZEX&sz=w400"
+        referrerpolicy="no-referrer"
+        class="w-full h-full object-cover"
+        onerror="this.parentElement.style.display='none'"/>
     </div>
     <nav class="flex flex-col gap-3">
       <button data-tab="home" class="sidebar-link flex items-center gap-5 p-5 rounded-[28px] font-black transition-all bg-orange-500 text-white shadow-2xl shadow-orange-100">
@@ -161,7 +168,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r28</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r001</p>
       </div>
     </div>
   </aside>
@@ -1706,6 +1713,64 @@ async function fetchAuthorWikidata(name) {
     const muerte = getDate('P570');
     const lugarNac = await getEntityLabel('P19'); // place of birth
 
+    // Derive siglo and epoca from birth year
+    const birthYear = nacimiento ? parseInt(nacimiento.substring(0,4)) : null;
+    let siglo = '', epoca = '';
+    if (birthYear) {
+      const s = Math.ceil(birthYear / 100);
+      const romanMap = {1:'I',2:'II',3:'III',4:'IV',5:'V',6:'VI',7:'VII',8:'VIII',9:'IX',10:'X',
+        11:'XI',12:'XII',13:'XIII',14:'XIV',15:'XV',16:'XVI',17:'XVII',18:'XVIII',19:'XIX',20:'XX',21:'XXI'};
+      siglo = (romanMap[s] || String(s)) + (birthYear < 0 ? ' a.C.' : '');
+      if (birthYear >= 1800 && birthYear < 1850) epoca = 'Romanticismo';
+      else if (birthYear >= 1850 && birthYear < 1900) epoca = 'Realismo / Naturalismo';
+      else if (birthYear >= 1900 && birthYear < 1940) epoca = 'Modernismo / Vanguardias';
+      else if (birthYear >= 1940 && birthYear < 1970) epoca = 'Boom Latinoamericano';
+      else if (birthYear >= 1970 && birthYear < 2000) epoca = 'Posmodernismo';
+      else if (birthYear >= 2000) epoca = 'Contemporáneo';
+      else if (birthYear >= 1700) epoca = 'Ilustración';
+      else if (birthYear >= 1600) epoca = 'Barroco';
+      else if (birthYear >= 1400) epoca = 'Renacimiento';
+      else epoca = 'Antigüedad / Medievo';
+    }
+
+    // Wikipedia categories from sitelinks
+    const wikiTitle = e.sitelinks?.eswiki?.title || e.sitelinks?.enwiki?.title || '';
+    let categorias_wikipedia = '';
+    if (wikiTitle) {
+      try {
+        const lang = e.sitelinks?.eswiki ? 'es' : 'en';
+        const catRes = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&prop=categories&titles=${encodeURIComponent(wikiTitle)}&cllimit=10&format=json&origin=*`);
+        const catJson = await catRes.json();
+        const pages = Object.values(catJson.query?.pages || {});
+        const cats = (pages[0]?.categories || []).map(c => c.title.replace(/^Categoría:|^Category:/i, '').trim()).filter(c => !c.toLowerCase().includes('desambiguación') && !c.toLowerCase().includes('disambiguation')).slice(0, 5);
+        categorias_wikipedia = cats.join(', ');
+      } catch(e) {}
+    }
+
+    // OpenLibrary key via search
+    let openlibrary_key = '';
+    try {
+      const olSr = await fetch(`https://openlibrary.org/search/authors.json?q=${encodeURIComponent(name)}&limit=1`);
+      const olSj = await olSr.json();
+      const olKey = olSj.docs?.[0]?.key || '';
+      openlibrary_key = olKey.replace('/authors/', '');
+    } catch(e) {}
+
+    // Notable works (P800) — up to 5
+    const notableWorks = await Promise.all(
+      (claims['P800'] || []).slice(0, 5).map(async c => {
+        const id = c?.mainsnak?.datavalue?.value?.id;
+        if (!id) return '';
+        try {
+          const lr = await fetch(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${id}&props=labels&languages=es|en&format=json&origin=*`);
+          const lj = await lr.json();
+          const labels = lj.entities?.[id]?.labels;
+          return labels?.es?.value || labels?.en?.value || '';
+        } catch(e) { return ''; }
+      })
+    );
+    const principales_obras_wd = notableWorks.filter(Boolean).join(', ');
+
     return {
       nombre: e.labels?.es?.value || e.labels?.en?.value || name,
       pais,
@@ -1722,6 +1787,11 @@ async function fetchAuthorWikidata(name) {
       foto_url: fotoUrl,
       lugar_nacimiento_completo: lugarNac,
       descripcion: e.descriptions?.es?.value || e.descriptions?.en?.value || '',
+      siglo,
+      epoca,
+      categorias_wikipedia,
+      openlibrary_key,
+      principales_obras: principales_obras_wd,
     };
   } catch(e) { console.warn('Wikidata error:', e); return null; }
 }
@@ -1729,15 +1799,14 @@ async function fetchAuthorWikidata(name) {
 function mergeAuthorData(name, ol, wd) {
   if (!ol && !wd) return null;
   const merged = { nombre: name };
-  // Wikidata wins for structured fields
   if (wd) Object.assign(merged, wd);
-  // Open Library fills gaps and wins for bio/photo/works if Wikidata has none
   if (ol) {
     if (!merged.fecha_nacimiento && ol.fecha_nacimiento) merged.fecha_nacimiento = ol.fecha_nacimiento;
     if (!merged.fecha_muerte && ol.fecha_muerte) merged.fecha_muerte = ol.fecha_muerte;
     if (!merged.foto_url && ol.foto_url) merged.foto_url = ol.foto_url;
     if (!merged.descripcion && ol.descripcion) merged.descripcion = ol.descripcion;
     if (!merged.numero_obras && ol.numero_obras) merged.numero_obras = ol.numero_obras;
+    // Merge principales_obras: prefer Wikidata (P800), fallback OL
     if (!merged.principales_obras && ol.principales_obras) merged.principales_obras = ol.principales_obras;
     if (!merged.openlibrary_key && ol.openlibrary_key) merged.openlibrary_key = ol.openlibrary_key;
     if (!merged.autor_vivo) merged.autor_vivo = ol.autor_vivo;
