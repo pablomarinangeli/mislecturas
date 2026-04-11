@@ -100,6 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2025.04.10-r25</p>
   </div>
 </div>
 
@@ -154,7 +155,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r24</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r25</p>
       </div>
     </div>
   </aside>
@@ -1372,8 +1373,8 @@ function renderStep2() {
       <div class="grid grid-cols-3 gap-4">${fieldRow('Año publicación','anio_publicacion',true)}${fieldRow('Idioma original','idioma_original',true)}${fieldRow('ISBN','ISBN',true)}</div>
       <div class="grid grid-cols-2 gap-4">${fieldRow('Género','genero_libro',true)}${fieldRow('Subgénero','subgenero_libro',false)}</div>
       ${fieldRow('URL portada','portada_url',true)}
-      <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Sinopsis <span class="text-orange-400">· Google Books</span></label>
-        <textarea name="resumen" rows="3" class="w-full px-5 py-3 rounded-[18px] border-2 border-slate-100 bg-slate-50 font-bold text-sm text-slate-700 outline-none field-locked resize-none" disabled>${d.resumen||''}</textarea></div>
+      <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Sinopsis <span class="text-orange-400">· editable</span></label>
+        <textarea name="resumen" rows="4" class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none resize-none">${d.resumen||''}</textarea></div>
       <div>
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Estado *</label>
         <div class="flex gap-3">
@@ -1430,9 +1431,7 @@ function toggleFav() {
 async function submitAddBook() {
   const form=document.getElementById('add-book-form');
   const data={};
-  form.querySelectorAll('input:not([disabled]),textarea:not([disabled]),select').forEach(el=>{ if(el.name) data[el.name]=el.value; });
-  // Also grab locked fields values
-  form.querySelectorAll('input[disabled]').forEach(el=>{ if(el.name) data[el.name]=el.value; });
+  form.querySelectorAll('input,textarea,select').forEach(el=>{ if(el.name) data[el.name]=el.value; });
   data.estado=addBookState.estado;
   if(!data.titulo){showToast('⚠ El título es requerido',true);return;}
   if(!data.Autor){showToast('⚠ El autor es requerido',true);return;}
@@ -1486,18 +1485,22 @@ async function fetchAuthorOpenLibrary(name) {
     if (!docs.length) return null;
     const a = docs[0];
     let details = {};
-    if (a.key) {
-      try { const dr = await fetch(`https://openlibrary.org${a.key}.json`); details = await dr.json(); } catch(e) {}
+    // Ensure key has the full path format
+    const authorKey = a.key ? (a.key.startsWith('/') ? a.key : `/authors/${a.key}`) : null;
+    if (authorKey) {
+      try { const dr = await fetch(`https://openlibrary.org${authorKey}.json`); details = await dr.json(); } catch(e) {}
     }
     const photoId = a.photos && a.photos[0] ? a.photos[0] : null;
     const bio = typeof details.bio === 'string' ? details.bio : (details.bio?.value || '');
     // Get top works
     let obras = '';
-    try {
-      const wr = await fetch(`https://openlibrary.org${a.key}/works.json?limit=5`);
-      const wj = await wr.json();
-      obras = (wj.entries || []).map(w => w.title).filter(Boolean).slice(0,5).join(', ');
-    } catch(e) {}
+    if (authorKey) {
+      try {
+        const wr = await fetch(`https://openlibrary.org${authorKey}/works.json?limit=5`);
+        const wj = await wr.json();
+        obras = (wj.entries || []).map(w => w.title).filter(Boolean).slice(0,5).join(', ');
+      } catch(e) {}
+    }
     return {
       nombre: a.name || name,
       fecha_nacimiento: a.birth_date || details.birth_date || '',
@@ -1655,12 +1658,15 @@ function mergeAuthorData(name, ol, wd) {
 }
 function renderAuthorConfirm(authorName, d, resolve) {
   const src = d?.wikidata_id ? 'Wikidata + Open Library' : d?.openlibrary_key ? 'Open Library' : null;
-  const f = (label, key, val, req=false, full=false) => `
-    <div${full?' class="col-span-2"':''}>
-      <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">${label}${req?' *':''}</label>
-      <input type="text" name="${key}" value="${(val||'').replace(/"/g,'&quot;')}"
+  // Always cast val to String to avoid .replace() crash on numbers
+  const f = (label, key, val, req=false, full=false) => {
+    const safeVal = String(val || '').replace(/"/g, '&quot;').replace(/\n/g, ' ');
+    return `<div${full ? ' class="col-span-2"' : ''}>
+      <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">${label}${req ? ' *' : ''}</label>
+      <input type="text" name="${key}" value="${safeVal}"
         class="w-full px-4 py-2.5 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
     </div>`;
+  };
   const dd = d || {};
   openDrawer(`<div class="p-10 space-y-8">
     <div>
