@@ -170,7 +170,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r22</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r23</p>
       </div>
     </div>
   </aside>
@@ -1002,7 +1002,7 @@ function _renderModal() {
           <div class="bg-white p-8 rounded-[40px] shadow-sm border border-orange-100/50 relative overflow-hidden">
             <div class="absolute -right-4 -bottom-4 text-orange-100 opacity-20">${icons.stickyNote}</div>
             <span class="text-[10px] font-black text-slate-300 uppercase tracking-widest block mb-4">Notas y Reflexiones</span>
-            <p class="text-slate-600 font-medium leading-relaxed italic">${si.Notas||'Sin notas personales.'}</p>
+            <p class="text-slate-600 font-medium leading-relaxed italic">${si.Mis_notas||'Sin notas personales.'}</p>
           </div>
         </div>
       </section>
@@ -1417,7 +1417,7 @@ function renderStep2() {
           </button>
           <input type="hidden" name="Es_Favorito" id="fav-value" value="No"/></div>
         <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas personales</label>
-          <textarea name="Notas" rows="3" placeholder="Tus reflexiones..." class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none"></textarea></div>
+          <textarea name="Mis_notas" rows="3" placeholder="Tus reflexiones..." class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none"></textarea></div>
       </div>
       <button type="button" onclick="submitAddBook()" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all mt-4">Guardar libro</button>
     </form>
@@ -1455,7 +1455,7 @@ async function submitAddBook() {
   if(!addBookState.estado){showToast('⚠ Seleccioná un estado',true);return;}
   data.Mi_Calificacion=addBookState.estado==='Leido'?(addBookState.rating||0):'';
   data.Es_Favorito=addBookState.estado==='Leido'?(addBookState.favorito?'Sí':'No'):'No';
-  if(addBookState.estado!=='Leido'){data.Anio_lectura='';data.Mes_Lectura='';data.Notas='';}
+  if(addBookState.estado!=='Leido'){data.Anio_lectura='';data.Mes_Lectura='';data.Mis_notas='';}
   data.libro_id=getNextId('book');
   showDrawerLoading('Verificando autor...');
   try {
@@ -1605,7 +1605,7 @@ function openReadingExperienceForm(bookId) {
         </button>
         <input type="hidden" name="Es_Favorito" id="exp-fav-value" value="No"/></div>
       <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas personales</label>
-        <textarea name="Notas" rows="4" placeholder="Tus reflexiones..." class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none"></textarea></div>
+        <textarea name="Mis_notas" rows="4" placeholder="Tus reflexiones..." class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none"></textarea></div>
       <button type="button" onclick="submitReadingExp('${bookId}')" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all">Guardar lectura</button>
     </form>
   </div>`);
@@ -1662,8 +1662,8 @@ function openEditExperience(bookId) {
       </div>
       <div>
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas personales</label>
-        <textarea name="Notas" rows="4" placeholder="Tus reflexiones..."
-          class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none">${book.Notas||''}</textarea>
+        <textarea name="Mis_notas" rows="4" placeholder="Tus reflexiones..."
+          class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 resize-none">${book.Mis_notas||''}</textarea>
       </div>
       <button type="button" onclick="submitReadingExp('${bookId}')"
         class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all">
@@ -1700,7 +1700,7 @@ async function saveStatusChange(bookId, newEstado, extraData) {
     if (extraData.Anio_lectura  !== undefined) fieldsToUpdate.Anio_lectura   = extraData.Anio_lectura;
     if (extraData.Mi_Calificacion !== undefined) fieldsToUpdate.Mi_Calificacion = extraData.Mi_Calificacion;
     if (extraData.Es_Favorito   !== undefined) fieldsToUpdate.Es_Favorito    = extraData.Es_Favorito;
-    if (extraData.Notas         !== undefined) fieldsToUpdate.Notas          = extraData.Notas;
+    if (extraData.Mis_notas         !== undefined) fieldsToUpdate.Mis_notas          = extraData.Mis_notas;
 
     await updateRowById(SHEET_ID_BOOKS, 'libro_id', bookId, fieldsToUpdate);
 
