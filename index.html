@@ -170,7 +170,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r21</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r22</p>
       </div>
     </div>
   </aside>
@@ -1225,15 +1225,23 @@ function openDrawer(content) {
   document.getElementById('crud-drawer').style.display='flex';
   document.body.style.overflow='hidden';
 }
-function closeDrawer() { document.getElementById('crud-drawer').style.display='none'; document.body.style.overflow=''; }
+function closeDrawer() { hideDrawerLoading(); document.getElementById('crud-drawer').style.display='none'; document.body.style.overflow=''; }
 function showDrawerLoading(msg) {
-  const ol=document.createElement('div');ol.id='drawer-loading';
-  ol.style.cssText='position:absolute;inset:0;background:rgba(255,255,255,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10';
-  ol.innerHTML=`<svg class="animate-spin text-orange-500 mb-4" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p class="font-black text-slate-600 text-sm">${msg}</p>`;
-  document.querySelector('.drawer-panel').style.position='relative';
-  document.querySelector('.drawer-panel').appendChild(ol);
+  // Always remove any existing loader first
+  hideDrawerLoading();
+  const panel = document.querySelector('.drawer-panel');
+  if (!panel) return;
+  panel.style.position = 'relative';
+  const ol = document.createElement('div');
+  ol.id = 'drawer-loading';
+  ol.style.cssText = 'position:absolute;inset:0;background:rgba(255,255,255,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10';
+  ol.innerHTML = `<svg class="animate-spin text-orange-500 mb-4" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><p class="font-black text-slate-600 text-sm">${msg}</p>`;
+  panel.appendChild(ol);
 }
-function hideDrawerLoading() { const el=document.getElementById('drawer-loading');if(el)el.remove(); }
+function hideDrawerLoading() {
+  // Remove ALL loaders anywhere in the document
+  document.querySelectorAll('#drawer-loading').forEach(el => el.remove());
+}
 
 const BOOKS_API_KEY = 'AIzaSyA5MOwwwhegkJKvueKCMV-aJ4CZO6bqqx8';
 
@@ -1700,6 +1708,7 @@ async function saveStatusChange(bookId, newEstado, extraData) {
     const updatedBook = { ...books[idx], Estado: newEstado, estado: newEstado, ...extraData };
     books[idx] = processBooks([updatedBook])[0];
 
+    hideDrawerLoading();
     closeDrawer(); closeStatusModal(); closeModal();
     renderHome();
     if (activeTab === 'books') renderBooks();
