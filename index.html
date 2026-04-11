@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2025.04.10-r25</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2025.04.10-r27</p>
   </div>
 </div>
 
@@ -136,10 +136,13 @@
     </nav>
     <div class="mt-auto pt-8 border-t border-orange-50 space-y-4">
       <div id="user-info" class="items-center gap-3">
-        <img id="user-avatar" src="" referrerpolicy="no-referrer" class="w-9 h-9 rounded-full object-cover border-2 border-orange-100"/>
+        <div class="relative flex-shrink-0">
+          <img id="user-avatar" src="" crossorigin="anonymous" referrerpolicy="no-referrer" class="w-10 h-10 rounded-full object-cover border-2 border-orange-100 shadow-sm" onerror="this.style.display='none';document.getElementById('user-avatar-fallback').style.display='flex'"/>
+          <div id="user-avatar-fallback" style="display:none" class="w-10 h-10 rounded-full bg-orange-500 text-white font-black text-sm flex items-center justify-center border-2 border-orange-100 shadow-sm" id="user-initials"></div>
+        </div>
         <div class="min-w-0">
           <p id="user-name" class="text-xs font-black text-slate-700 truncate"></p>
-          <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Google Drive</p>
+          <p id="user-label" class="text-[9px] font-bold text-orange-400 uppercase tracking-wider"></p>
         </div>
       </div>
       <button id="btn-sync" onclick="syncFromDrive()" class="items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-orange-500 transition-all">
@@ -155,7 +158,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r25</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2025.04.10-r27</p>
       </div>
     </div>
   </aside>
@@ -231,7 +234,31 @@
     </div>
 
     <!-- AUTHORS TAB -->
-    <div id="tab-authors" style="display:none" class="fade-in">
+    <div id="tab-authors" style="display:none" class="fade-in space-y-6">
+      <!-- Author filters -->
+      <div class="flex flex-wrap gap-4 items-center">
+        <!-- Nationality text filter -->
+        <div class="flex items-center gap-3 bg-white border border-orange-50 rounded-[28px] px-6 py-3.5 shadow-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-400 flex-shrink-0"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <input id="author-nat-filter" type="text" placeholder="Filtrar por nacionalidad..."
+            class="text-[11px] font-black text-slate-600 outline-none bg-transparent w-44 placeholder-slate-300"
+            oninput="onAuthorFilterChange()"/>
+          <button id="author-nat-clear" onclick="clearAuthorNatFilter()" style="display:none"
+            class="text-orange-400 hover:text-orange-600 text-[10px] font-black transition-colors">✕</button>
+        </div>
+        <!-- Books count filter -->
+        <div id="author-books-filter-wrap" class="flex items-center gap-3 bg-white border border-orange-50 rounded-[28px] px-6 py-3.5 shadow-sm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-400"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">En mi biblioteca:</span>
+          <div class="flex items-center gap-1.5">
+            <button onclick="toggleAuthorBooksFilter(0)" data-books="0" class="abf-btn px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-orange-500 text-white shadow-md">Todos</button>
+            <button onclick="toggleAuthorBooksFilter(1)" data-books="1" class="abf-btn px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">1+</button>
+            <button onclick="toggleAuthorBooksFilter(2)" data-books="2" class="abf-btn px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">2+</button>
+            <button onclick="toggleAuthorBooksFilter(3)" data-books="3" class="abf-btn px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">3+</button>
+            <button onclick="toggleAuthorBooksFilter(5)" data-books="5" class="abf-btn px-3 py-1.5 rounded-full text-[10px] font-black transition-all bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500">5+</button>
+          </div>
+        </div>
+      </div>
       <div id="authors-grid"></div>
       <div id="authors-pagination" class="flex items-center justify-between mt-8"></div>
     </div>
@@ -326,9 +353,23 @@ function signInWithGoogle() {
         try {
           const p = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: `Bearer ${googleAccessToken}` } });
           const profile = await p.json();
-          document.getElementById('user-name').textContent = profile.name || profile.email;
-          document.getElementById('user-avatar').src = profile.picture || '';
-        } catch(e) {}
+          const firstName = (profile.given_name || profile.name || profile.email || '').split(' ')[0];
+          const initials = (profile.name || profile.email || '?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+          document.getElementById('user-name').textContent = firstName;
+          document.getElementById('user-label').textContent = profile.email || 'Google Drive';
+          // Avatar: append timestamp to force reload, avoid cache issues
+          const avatar = document.getElementById('user-avatar');
+          const fallback = document.getElementById('user-avatar-fallback');
+          if (profile.picture) {
+            avatar.src = profile.picture + (profile.picture.includes('?') ? '&' : '?') + 't=' + Date.now();
+            avatar.style.display = 'block';
+            // Set initials as fallback text
+            if (fallback) { fallback.textContent = initials; fallback.style.display = 'none'; }
+          } else {
+            avatar.style.display = 'none';
+            if (fallback) { fallback.textContent = initials; fallback.style.display = 'flex'; }
+          }
+        } catch(e) { console.warn('Profile fetch failed:', e); }
         await loadFromGoogleSheets();
       }
     });
@@ -842,6 +883,7 @@ function renderBooks() {
         <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Lectura</span>
         <span class="text-[11px] font-black text-slate-500">${b.Mes_Lectura||'--'} ${b.Anio_lectura||''}</span>
       </div>
+      <span class="hidden md:inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${b.estado==='Leido'?'bg-emerald-50 text-emerald-600':b.estado==='Deseado'?'bg-indigo-50 text-indigo-600':'bg-amber-50 text-amber-600'}">${b.estado||''}</span>
       <div class="flex gap-1">${starsHtml(b.rating,16)}</div>
       <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">${icons.eye}</div>
     </div>`).join('');
@@ -870,10 +912,54 @@ function renderYearFilterPills() {
   document.getElementById('year-filter-pills').innerHTML=years.map(y=>`<button onclick="toggleYearFilter('${y}')" class="year-pill px-4 py-1.5 rounded-full border text-[10px] font-black uppercase tracking-widest ${selectedYears.has(y)?'active':'border-slate-200 text-slate-400 hover:border-orange-300'}">${y}</button>`).join('');
 }
 
+// ===== AUTHOR FILTERS =====
+let authorNatFilter = '';
+let authorBooksFilter = 0; // 0 = todos, n = mínimo n libros
+
+function onAuthorFilterChange() {
+  authorNatFilter = document.getElementById('author-nat-filter').value;
+  const clr = document.getElementById('author-nat-clear');
+  if (clr) clr.style.display = authorNatFilter ? 'inline' : 'none';
+  authorPage = 1;
+  renderAuthors();
+}
+function clearAuthorNatFilter() {
+  authorNatFilter = '';
+  const inp = document.getElementById('author-nat-filter');
+  if (inp) inp.value = '';
+  const clr = document.getElementById('author-nat-clear');
+  if (clr) clr.style.display = 'none';
+  authorPage = 1;
+  renderAuthors();
+}
+function toggleAuthorBooksFilter(n) {
+  authorBooksFilter = n;
+  authorPage = 1;
+  document.querySelectorAll('.abf-btn').forEach(btn => {
+    const active = parseInt(btn.dataset.books) === n;
+    btn.className = `abf-btn px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${active ? 'bg-orange-500 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-400 hover:border-orange-300 hover:text-orange-500'}`;
+  });
+  renderAuthors();
+}
+
+// Ribbon SVG for deceased authors - black ribbon
+const ribbonSvg = `<svg viewBox="0 0 80 100" fill="currentColor" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><path d="M40 42 C36 36 20 28 10 18 C4 11 6 2 14 4 C24 6 34 22 40 42Z"/><path d="M40 42 C44 36 60 28 70 18 C76 11 74 2 66 4 C56 6 46 22 40 42Z"/><ellipse cx="40" cy="43" rx="8" ry="7"/><path d="M36 49 C30 62 22 72 16 90 C14 96 24 99 26 92 C31 78 35 64 40 52Z"/><path d="M44 49 C50 62 58 72 64 90 C66 96 56 99 54 92 C49 78 45 64 40 52Z"/></svg>`;
+
 // ===== RENDER AUTHORS =====
-function renderAuthors() {
+function getFilteredAuthors() {
   const s = searchTerm.toLowerCase();
-  const f = authors.filter(a=>(a.nombre||'').toLowerCase().includes(s));
+  const nat = authorNatFilter.toLowerCase().trim();
+  return authors.filter(a => {
+    const ms = (a.nombre||'').toLowerCase().includes(s);
+    const mn = !nat || (a.nacionalidad||'').toLowerCase().includes(nat) || (a.pais||'').toLowerCase().includes(nat);
+    const bc = books.filter(b => (b.Autor||'').trim().toLowerCase() === (a.nombre||'').trim().toLowerCase()).length;
+    const mb = authorBooksFilter === 0 || bc >= authorBooksFilter;
+    return ms && mn && mb;
+  });
+}
+
+function renderAuthors() {
+  const f = getFilteredAuthors();
 
   // Pagination
   const total = f.length;
@@ -888,7 +974,7 @@ function renderAuthors() {
       const bc=books.filter(b=>(b.Autor||'').trim().toLowerCase()===(a.nombre||'').trim().toLowerCase()).length;
       const age=calculateAge(a.fecha_nacimiento,a.fecha_muerte);
       return `<div onclick="openModal('${a.autor_id}','author')" class="bg-white p-10 rounded-[60px] border border-orange-50 shadow-sm hover:shadow-2xl transition-all cursor-pointer text-center group relative overflow-hidden">
-        ${a.isDead?`<div class="absolute top-3 right-3 w-9 h-12 text-slate-400">${icons.ribbon}</div>`:''}
+        ${a.isDead?`<div class="absolute top-3 right-3 w-9 h-12 text-slate-800 opacity-80">${ribbonSvg}</div>`:''}
         ${a.favorite?`<div class="absolute top-8 left-8 bg-rose-500 text-white p-2.5 rounded-full shadow-lg border-2 border-white z-10">${icons.heartFill}</div>`:''}
         <div class="w-32 h-32 rounded-full overflow-hidden mx-auto mb-8 border-4 border-orange-50 shadow-2xl" style="${a.isDead?'filter:grayscale(0.3)':''}">
           <img src="${a.foto_url||''}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.src='https://via.placeholder.com/150'"/>
@@ -897,21 +983,37 @@ function renderAuthors() {
         <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-4">${a.pais||''}</p>
         <div class="flex flex-col gap-1 mb-6 text-[10px] font-bold text-slate-400">
           <span>${(a.fecha_nacimiento||'?').split('-')[0]} — ${a.fecha_muerte?a.fecha_muerte.split('-')[0]:(a.autor_vivo==='No'?'?':'Actual')}</span>
-          <span class="text-slate-300 italic">${age!==null?age:'?'} años</span>
+          <span class="text-slate-300 italic">${age!==null?age+' años':'?'}</span>
         </div>
         <div class="flex items-center justify-center gap-2 px-5 py-2.5 bg-orange-50 rounded-[20px] text-orange-600 text-[10px] font-black w-fit mx-auto">${bc} libros</div>
       </div>`;
     }).join('');
   } else {
-    g.className='space-y-6';
+    g.className='space-y-4';
     g.innerHTML=paged.map(a=>{
       const bc=books.filter(b=>(b.Autor||'').trim().toLowerCase()===(a.nombre||'').trim().toLowerCase()).length;
-      return `<div onclick="openModal('${a.autor_id}','author')" class="bg-white p-6 pr-12 rounded-[32px] border border-orange-50 shadow-sm flex items-center gap-8 cursor-pointer hover:bg-orange-50 transition-all">
-        <div class="relative"><img src="${a.foto_url||''}" class="w-16 h-16 rounded-full object-cover shadow-lg" referrerpolicy="no-referrer" onerror="this.src='https://via.placeholder.com/60'" style="${a.isDead?'filter:grayscale(0.4)':''}"/>
-        ${a.favorite?`<div class="absolute -top-1 -left-1 bg-rose-500 text-white p-1.5 rounded-full shadow-md border-2 border-white">${icons.heartFill}</div>`:''}</div>
-        <div class="flex-1"><div class="flex items-center gap-3 mb-1"><h4 class="font-black text-slate-800 text-xl">${a.nombre||''}</h4>${a.isDead?`<span class="w-5 h-7 inline-block text-slate-400">${icons.ribbon}</span>`:''}</div>
-        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${a.pais||''} · ${a.nacionalidad||''}</p></div>
-        <div class="flex items-center gap-3 px-5 py-2 bg-white rounded-2xl text-orange-500 text-[10px] font-black shadow-sm">${bc}</div>
+      const age=calculateAge(a.fecha_nacimiento,a.fecha_muerte);
+      const nacYear=(a.fecha_nacimiento||'').split('-')[0]||'?';
+      const defYear=a.fecha_muerte?(a.fecha_muerte.split('-')[0]||'?'):(a.autor_vivo==='No'?'?':'');
+      const lifeSpan=defYear?`${nacYear} — ${defYear}`:nacYear!=='?'?`n. ${nacYear}`:'';
+      return `<div onclick="openModal('${a.autor_id}','author')" class="bg-white p-5 pr-10 rounded-[32px] border border-orange-50 shadow-sm flex items-center gap-6 cursor-pointer hover:bg-orange-50 transition-all">
+        <div class="relative flex-shrink-0">
+          <img src="${a.foto_url||''}" class="w-16 h-16 rounded-full object-cover shadow-lg" referrerpolicy="no-referrer" onerror="this.src='https://via.placeholder.com/60'" style="${a.isDead?'filter:grayscale(0.4)':''}"/>
+          ${a.favorite?`<div class="absolute -top-1 -left-1 bg-rose-500 text-white p-1.5 rounded-full shadow-md border-2 border-white">${icons.heartFill}</div>`:''}
+          ${a.isDead?`<div class="absolute -top-1 -right-1 w-5 h-7 text-slate-800 opacity-80">${ribbonSvg}</div>`:''}
+        </div>
+        <div class="flex-1 min-w-0">
+          <h4 class="font-black text-slate-800 text-lg truncate">${a.nombre||''}</h4>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">${a.pais||''} · ${a.nacionalidad||''}</p>
+        </div>
+        <div class="hidden md:flex flex-col items-end min-w-[130px] gap-1">
+          ${lifeSpan?`<span class="text-[11px] font-black text-slate-500">${lifeSpan}</span>`:''}
+          ${age!==null?`<span class="text-[10px] font-bold text-slate-300 italic">${age} años</span>`:''}
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-2xl text-orange-600 text-[10px] font-black flex-shrink-0">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          ${bc}
+        </div>
         ${icons.chevRight}
       </div>`;
     }).join('');
@@ -951,7 +1053,7 @@ function _renderModal() {
       <button onclick="closeModal()" class="bg-white/20 hover:bg-white/40 p-4 rounded-full text-white backdrop-blur-xl transition-all">${icons.chevLeft}</button>
       ${modalHistory.length>0?`<button onclick="goModalBack()" class="bg-white/20 hover:bg-orange-500 px-5 py-3 rounded-full text-white backdrop-blur-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all">${icons.chevLeft.replace('24','14')} Volver</button>`:''}
     </div>
-    ${si.isDead&&type==='author'?`<div class="absolute top-8 right-8 w-12 h-16 text-white drop-shadow-2xl">${icons.ribbon}</div>`:''}
+    ${si.isDead&&type==='author'?`<div class="absolute top-8 right-8 w-12 h-16 text-slate-900 drop-shadow-2xl opacity-90">${ribbonSvg}</div>`:''}
     ${si.favorite?`<div class="absolute bottom-10 left-10 bg-rose-500 text-white p-4 rounded-full shadow-xl">${icons.heartFill}</div>`:''}`;
 
   const tags=[
@@ -1052,6 +1154,8 @@ function _renderModal() {
         ${wikipediaBtn(si.titulo||si.nombre||'')}
         ${modalType==='book'&&dataSource==='google'&&(si.estado==='Deseado'||si.estado==='Pendiente')?`<button onclick="openStatusModal('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Cambiar estado</button>`:''}
         ${modalType==='book'&&dataSource==='google'&&si.estado==='Leido'?`<button onclick="openEditExperience('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-orange-100 hover:bg-orange-500 text-orange-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-orange-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar lectura</button>`:''}
+        ${modalType==='author'&&dataSource==='google'?`<button onclick="closeModal();openEditAuthor('${si.autor_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-slate-100 hover:bg-orange-500 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar autor</button>`:''}
+        ${modalType==='author'&&dataSource==='google'?`<button onclick="toggleAuthorFavorite('${si.autor_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${si.favorite?'bg-rose-500 text-white border-rose-500 hover:bg-rose-600':'bg-white text-slate-400 border-slate-200 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="${si.favorite?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>${si.favorite?'Favorito':'Marcar favorito'}</button>`:''}
       </div>
     </div>
     ${detail}`;
@@ -1874,6 +1978,99 @@ async function submitReadingExp(bookId) {
   const data={};form.querySelectorAll('input,textarea,select').forEach(el=>{if(el.name)data[el.name]=el.value;});
   data.Mi_Calificacion=_expRating||0;data.Es_Favorito=_expFav?'Sí':'No';
   await saveStatusChange(bookId,'Leido',data);
+}
+// ===== EDIT AUTHOR =====
+function openEditAuthor(authorId) {
+  const a = authors.find(x => x.autor_id === authorId);
+  if (!a) return;
+  const f = (label, key, full=false) => {
+    const safeVal = String(a[key] || '').replace(/"/g, '&quot;');
+    return `<div${full?' class="col-span-2"':''}>
+      <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">${label}</label>
+      <input type="text" name="${key}" value="${safeVal}"
+        class="w-full px-4 py-2.5 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
+    </div>`;
+  };
+  openDrawer(`<div class="p-10 space-y-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-orange-500 font-black text-[10px] uppercase tracking-widest mb-1">Editar autor</p>
+        <h2 class="text-2xl font-black text-slate-800 tracking-tighter">${a.nombre||''}</h2>
+      </div>
+      <button onclick="closeDrawer()" class="p-3 rounded-2xl text-slate-300 hover:text-slate-600 transition-all">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <form id="edit-author-form" class="space-y-4" onsubmit="return false">
+      <div class="grid grid-cols-2 gap-3">
+        ${f('Nombre','nombre')}
+        ${f('País','pais')}
+        ${f('Continente','continente')}
+        ${f('Nacionalidad','nacionalidad')}
+        ${f('Fecha nacimiento','fecha_nacimiento')}
+        ${f('Fecha muerte','fecha_muerte')}
+        ${f('Género autor','genero_autor')}
+        ${f('Autor vivo','autor_vivo')}
+        ${f('Idioma principal','idioma_principal')}
+        ${f('Ocupación','ocupacion')}
+        ${f('Géneros literarios','generos_literarios')}
+        ${f('Premios importantes','premios_importantes')}
+        ${f('Número de obras','numero_obras')}
+        ${f('Wikidata ID','wikidata_id')}
+        ${f('Descripción','descripcion',true)}
+        ${f('Principales obras','principales_obras',true)}
+        ${f('URL foto','foto_url',true)}
+        ${f('URL Wikipedia','wikipedia_url',true)}
+        ${f('Lugar de nacimiento','lugar_nacimiento_completo',true)}
+      </div>
+      <button type="button" onclick="saveEditAuthor('${authorId}')"
+        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all mt-4">
+        Guardar cambios
+      </button>
+    </form>
+  </div>`);
+}
+
+async function saveEditAuthor(authorId) {
+  const idx = authors.findIndex(a => a.autor_id === authorId);
+  if (idx === -1) return;
+  const form = document.getElementById('edit-author-form');
+  const fields = {};
+  form.querySelectorAll('input').forEach(el => { if (el.name) fields[el.name] = el.value; });
+  showDrawerLoading('Guardando autor en Google Drive...');
+  try {
+    await updateRowById(SHEET_ID_AUTHORS, 'autor_id', authorId, fields);
+    // Update local state
+    authors[idx] = processAuthors([{ ...authors[idx], ...fields }])[0];
+    hideDrawerLoading();
+    closeDrawer();
+    renderAuthors();
+    renderHome();
+    showToast('✓ Autor actualizado correctamente');
+  } catch(err) {
+    console.error(err);
+    showToast('⚠ Error: ' + err.message, true);
+    hideDrawerLoading();
+  }
+}
+
+async function toggleAuthorFavorite(authorId) {
+  const idx = authors.findIndex(a => a.autor_id === authorId);
+  if (idx === -1) return;
+  const newFav = !authors[idx].favorite;
+  const newFavStr = newFav ? 'Sí' : 'No';
+  try {
+    await updateRowById(SHEET_ID_AUTHORS, 'autor_id', authorId, { Es_Favorito: newFavStr });
+    authors[idx] = processAuthors([{ ...authors[idx], Es_Favorito: newFavStr }])[0];
+    // Re-render modal in place to reflect new state
+    _renderModal();
+    renderHome();
+    if (activeTab === 'authors') renderAuthors();
+    showToast(newFav ? '❤ Marcado como favorito' : 'Removido de favoritos');
+  } catch(err) {
+    console.error(err);
+    showToast('⚠ Error: ' + err.message, true);
+  }
 }
 async function saveStatusChange(bookId, newEstado, extraData) {
   const idx = books.findIndex(b => b.libro_id === bookId);
