@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r008</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r009</p>
   </div>
 </div>
 
@@ -161,7 +161,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r008</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r009</p>
       </div>
     </div>
   </aside>
@@ -1183,7 +1183,9 @@ function _renderModal() {
         ${modalType==='book'&&dataSource==='google'&&(si.estado==='Deseado'||si.estado==='Pendiente')?`<button onclick="openStatusModal('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Cambiar estado</button>`:''}
         ${modalType==='book'&&dataSource==='google'&&si.estado==='Leido'?`<button onclick="openEditExperience('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-orange-100 hover:bg-orange-500 text-orange-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-orange-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar lectura</button>`:''}
         ${modalType==='book'&&dataSource==='google'?`<button onclick="closeModal();openEditBook('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-slate-100 hover:bg-orange-500 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar libro</button>`:''}
+        ${modalType==='book'&&dataSource==='google'?`<button onclick="confirmDeleteBook('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-white text-rose-400 border border-rose-200 hover:bg-rose-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Eliminar</button>`:''}
         ${modalType==='author'&&dataSource==='google'?`<button onclick="closeModal();openEditAuthor('${si.autor_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-slate-100 hover:bg-orange-500 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar autor</button>`:''}
+        ${modalType==='author'&&dataSource==='google'?`<button onclick="confirmDeleteAuthor('${si.autor_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-white text-rose-400 border border-rose-200 hover:bg-rose-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Eliminar</button>`:''}
         ${modalType==='author'&&dataSource==='google'?`<button onclick="toggleAuthorFavorite('${si.autor_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border ${si.favorite?'bg-rose-500 text-white border-rose-500 hover:bg-rose-600':'bg-white text-slate-400 border-slate-200 hover:bg-rose-50 hover:text-rose-500 hover:border-rose-200'}"><svg width="14" height="14" viewBox="0 0 24 24" fill="${si.favorite?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>${si.favorite?'Favorito':'Marcar favorito'}</button>`:''}
       </div>
     </div>
@@ -2419,6 +2421,132 @@ function buildBookFieldMap(gb, ol, wd) {
     wikidata_id:        wd?.wikidata_id || '',
     wikipedia_url_libro:wd?.wikipedia_url || '',
   };
+}
+
+// ===== DELETE BOOK & AUTHOR =====
+function confirmDeleteBook(bookId) {
+  const b = books.find(x => x.libro_id === bookId);
+  if (!b) return;
+  document.getElementById('status-modal-content').innerHTML = `
+    <div class="space-y-6">
+      <div class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </div>
+      <div class="text-center">
+        <h3 class="text-xl font-black text-slate-800 tracking-tight mb-2">¿Eliminar este libro?</h3>
+        <p class="font-black text-slate-600 mb-1">${b.titulo||''}</p>
+        <p class="text-sm font-bold text-slate-400">${b.Autor||''}</p>
+        <p class="text-[10px] font-black text-rose-400 uppercase tracking-widest mt-4">Esta acción no se puede deshacer</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeStatusModal()" class="flex-1 py-4 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">Cancelar</button>
+        <button onclick="deleteBook('${bookId}')" class="flex-1 py-4 rounded-[20px] bg-rose-500 hover:bg-rose-600 text-white font-black text-sm shadow-lg transition-all">Sí, eliminar</button>
+      </div>
+    </div>`;
+  document.getElementById('status-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+async function deleteBook(bookId) {
+  const idx = books.findIndex(b => b.libro_id === bookId);
+  if (idx === -1) return;
+  closeStatusModal(); closeModal();
+  showToast('Eliminando libro...');
+  try {
+    // Find and delete the row in the Sheet
+    const headers = await getSheetHeaders(SHEET_ID_BOOKS);
+    const idColIdx = headers.findIndex(h => h.toLowerCase() === 'libro_id');
+    if (idColIdx === -1) throw new Error('Columna libro_id no encontrada');
+    const idColLetter = colIndexToLetter(idColIdx);
+    const colUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_BOOKS}/values/${idColLetter}:${idColLetter}`;
+    const colRes = await fetch(colUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+    const colJson = await colRes.json();
+    const colVals = (colJson.values || []);
+    let sheetRow = -1;
+    for (let i = 1; i < colVals.length; i++) {
+      if ((colVals[i][0] || '') === bookId) { sheetRow = i + 1; break; }
+    }
+    if (sheetRow === -1) throw new Error('Fila no encontrada en la Sheet');
+    const sheetName = await getFirstSheetName(SHEET_ID_BOOKS);
+    const deleteUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_BOOKS}:batchUpdate`;
+    const sheetMeta = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_BOOKS}?fields=sheets.properties`, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+    const sheetMetaJson = await sheetMeta.json();
+    const sheetId = sheetMetaJson.sheets?.[0]?.properties?.sheetId ?? 0;
+    const deleteRes = await fetch(deleteUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: sheetRow - 1, endIndex: sheetRow } } }] })
+    });
+    if (!deleteRes.ok) throw new Error(`Delete error ${deleteRes.status}: ${await deleteRes.text()}`);
+    books.splice(idx, 1);
+    renderBooks(); renderHome();
+    showToast('✓ Libro eliminado');
+  } catch(err) {
+    console.error(err);
+    showToast('⚠ Error al eliminar: ' + err.message, true);
+  }
+}
+
+function confirmDeleteAuthor(authorId) {
+  const a = authors.find(x => x.autor_id === authorId);
+  if (!a) return;
+  const bookCount = books.filter(b => (b.Autor||'').trim().toLowerCase() === (a.nombre||'').trim().toLowerCase()).length;
+  document.getElementById('status-modal-content').innerHTML = `
+    <div class="space-y-6">
+      <div class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      </div>
+      <div class="text-center">
+        <h3 class="text-xl font-black text-slate-800 tracking-tight mb-2">¿Eliminar este autor?</h3>
+        <p class="font-black text-slate-600 mb-1">${a.nombre||''}</p>
+        ${bookCount > 0 ? `<p class="text-sm font-bold text-amber-500 mt-2">⚠ Tiene ${bookCount} libro${bookCount>1?'s':''} en tu biblioteca</p>` : ''}
+        <p class="text-[10px] font-black text-rose-400 uppercase tracking-widest mt-4">Esta acción no se puede deshacer</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeStatusModal()" class="flex-1 py-4 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">Cancelar</button>
+        <button onclick="deleteAuthor('${authorId}')" class="flex-1 py-4 rounded-[20px] bg-rose-500 hover:bg-rose-600 text-white font-black text-sm shadow-lg transition-all">Sí, eliminar</button>
+      </div>
+    </div>`;
+  document.getElementById('status-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+async function deleteAuthor(authorId) {
+  const idx = authors.findIndex(a => a.autor_id === authorId);
+  if (idx === -1) return;
+  closeStatusModal(); closeModal();
+  showToast('Eliminando autor...');
+  try {
+    const headers = await getSheetHeaders(SHEET_ID_AUTHORS);
+    const idColIdx = headers.findIndex(h => h.toLowerCase() === 'autor_id');
+    if (idColIdx === -1) throw new Error('Columna autor_id no encontrada');
+    const idColLetter = colIndexToLetter(idColIdx);
+    const colUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_AUTHORS}/values/${idColLetter}:${idColLetter}`;
+    const colRes = await fetch(colUrl, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+    const colJson = await colRes.json();
+    const colVals = colJson.values || [];
+    let sheetRow = -1;
+    for (let i = 1; i < colVals.length; i++) {
+      if ((colVals[i][0] || '') === authorId) { sheetRow = i + 1; break; }
+    }
+    if (sheetRow === -1) throw new Error('Fila no encontrada en la Sheet');
+    const sheetMeta = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_AUTHORS}?fields=sheets.properties`, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+    const sheetMetaJson = await sheetMeta.json();
+    const sheetId = sheetMetaJson.sheets?.[0]?.properties?.sheetId ?? 0;
+    const deleteUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_AUTHORS}:batchUpdate`;
+    const deleteRes = await fetch(deleteUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: sheetRow - 1, endIndex: sheetRow } } }] })
+    });
+    if (!deleteRes.ok) throw new Error(`Delete error ${deleteRes.status}: ${await deleteRes.text()}`);
+    authors.splice(idx, 1);
+    renderAuthors(); renderHome();
+    showToast('✓ Autor eliminado');
+  } catch(err) {
+    console.error(err);
+    showToast('⚠ Error al eliminar: ' + err.message, true);
+  }
 }
 
 async function toggleAuthorFavorite(authorId) {
