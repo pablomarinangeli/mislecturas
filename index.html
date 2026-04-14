@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r011</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r012</p>
   </div>
 </div>
 
@@ -165,7 +165,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r011</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r012</p>
       </div>
     </div>
   </aside>
@@ -384,9 +384,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('modal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
   });
-  document.getElementById('file-books').addEventListener('change', e => handleFileUpload(e, 'books'));
-  document.getElementById('file-authors').addEventListener('change', e => handleFileUpload(e, 'authors'));
-  document.getElementById('auth-screen').addEventListener('change', e => {
+  const fileBooks = document.getElementById('file-books');
+  if (fileBooks) fileBooks.addEventListener('change', e => handleFileUpload(e, 'books'));
+  const fileAuthors = document.getElementById('file-authors');
+  if (fileAuthors) fileAuthors.addEventListener('change', e => handleFileUpload(e, 'authors'));
+  const authScreen = document.getElementById('auth-screen');
+  if (authScreen) authScreen.addEventListener('change', e => {
     if (e.target.id === 'file-books') handleFileUpload(e, 'books');
     if (e.target.id === 'file-authors') handleFileUpload(e, 'authors');
   });
@@ -1226,7 +1229,7 @@ function _renderModal() {
         <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] mb-10 flex items-center gap-4"><span class="w-8 h-1 bg-orange-100 rounded-full"></span>Carrera Literaria</h4>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div class="space-y-8">${detailInfo('Géneros Literarios',si.generos_literarios,icons.bookmark)}${detailInfo('Idioma Principal',si.idioma_principal,icons.msgSquare)}${detailInfo('Número de Obras',si.numero_obras,icons.hash)}</div>
-          <div class="space-y-8">${detailInfoList('Principales Obras',si.principales_obras,icons.star)}${detailInfo('Premios Importantes',si.premios_importantes,icons.award)}</div>
+          <div class="space-y-8">${detailInfoList('Principales Obras',si['principales_obras (top 3–5)'],icons.star)}${detailInfo('Premios Importantes',si.premios_importantes,icons.award)}</div>
         </div>
       </section>
     </div>`;
@@ -1767,7 +1770,7 @@ async function fetchAuthorOpenLibrary(name) {
       openlibrary_key: (a.key || '').replace('/authors/', ''),
       autor_vivo: a.death_date ? 'No' : 'Sí',
       numero_obras: a.work_count || '',
-      principales_obras: obras,
+      'principales_obras (top 3–5)': obras,
     };
   } catch(e) { console.warn('OL author error:', e); return null; }
 }
@@ -1947,7 +1950,7 @@ async function fetchAuthorWikidata(name) {
       epoca,
       categorias_wikipedia,
       openlibrary_key,
-      principales_obras: principales_obras_wd,
+      'principales_obras (top 3–5)': principales_obras_wd,
     };
   } catch(e) { console.warn('Wikidata error:', e); return null; }
 }
@@ -1962,8 +1965,8 @@ function mergeAuthorData(name, ol, wd) {
     if (!merged.foto_url && ol.foto_url) merged.foto_url = ol.foto_url;
     if (!merged.descripcion && ol.descripcion) merged.descripcion = ol.descripcion;
     if (!merged.numero_obras && ol.numero_obras) merged.numero_obras = ol.numero_obras;
-    // Merge principales_obras: prefer Wikidata (P800), fallback OL
-    if (!merged.principales_obras && ol.principales_obras) merged.principales_obras = ol.principales_obras;
+    // Merge 'principales_obras (top 3–5)': prefer Wikidata (P800), fallback OL
+    if (!merged['principales_obras (top 3–5)'] && ol['principales_obras (top 3–5)']) merged['principales_obras (top 3–5)'] = ol['principales_obras (top 3–5)'];
     if (!merged.openlibrary_key && ol.openlibrary_key) merged.openlibrary_key = ol.openlibrary_key;
     if (!merged.autor_vivo) merged.autor_vivo = ol.autor_vivo;
   }
@@ -2018,7 +2021,7 @@ function renderAuthorConfirm(authorName, d, resolve) {
         ${f('Número de obras','numero_obras',dd.numero_obras||'')}
         ${f('Wikidata ID','wikidata_id',dd.wikidata_id||'')}
         ${f('Descripción','descripcion',dd.descripcion||'',false,true)}
-        ${f('Principales obras','principales_obras',dd.principales_obras||'',false,true)}
+        ${f('Principales obras','principales_obras (top 3–5)',dd['principales_obras (top 3–5)']||'',false,true)}
         ${f('URL foto','foto_url',dd.foto_url||'',false,true)}
         ${f('URL Wikipedia','wikipedia_url',dd.wikipedia_url||'',false,true)}
         ${f('Lugar de nacimiento','lugar_nacimiento_completo',dd.lugar_nacimiento_completo||'',false,true)}
@@ -2218,7 +2221,7 @@ function openEditAuthor(authorId) {
     {key:'wikidata_id',              label:'Wikidata ID'},
     {key:'openlibrary_key',          label:'OpenLibrary key'},
     {key:'descripcion',              label:'Descripción', textarea:true},
-    {key:'principales_obras',        label:'Principales obras (top 3–5)', textarea:true},
+    {key:'principales_obras (top 3–5)',        label:'Principales obras (top 3–5)', textarea:true},
     {key:'foto_url',                 label:'URL foto', full:true},
     {key:'wikipedia_url',            label:'URL Wikipedia', full:true},
     {key:'lugar_nacimiento_completo',label:'Lugar de nacimiento', full:true},
@@ -2771,6 +2774,7 @@ async function startBulkFill() {
       bulkSetProgress(i+1, toProcess.length, `Libros: ${b.titulo||''}`.substring(0,40));
 
       try {
+        await ensureFreshToken();
         const [gbData, olData, wdData] = await Promise.all([
           fetchBookFromGoogleBooks(b.titulo, b.Autor),
           fetchBookFromOpenLibrary(b.titulo, b.Autor),
@@ -2820,6 +2824,7 @@ async function startBulkFill() {
       bulkSetProgress(i+1, toProcess.length, `Autores: ${a.nombre||''}`.substring(0,40));
 
       try {
+        await ensureFreshToken();
         const [olData, wdData] = await Promise.all([
           fetchAuthorOpenLibrary(a.nombre),
           fetchAuthorWikidata(a.nombre),
@@ -2828,7 +2833,7 @@ async function startBulkFill() {
         const authorFields = ['pais','continente','nacionalidad','genero_autor','autor_vivo',
           'fecha_nacimiento','fecha_muerte','siglo','epoca','idioma_principal','ocupacion',
           'generos_literarios','premios_importantes','numero_obras','wikidata_id',
-          'openlibrary_key','descripcion','principales_obras','foto_url','wikipedia_url',
+          'openlibrary_key','descripcion','principales_obras (top 3–5)','foto_url','wikipedia_url',
           'lugar_nacimiento_completo','categorias_wikipedia'];
 
         const updates = {};
