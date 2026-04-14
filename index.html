@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r010</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r011</p>
   </div>
 </div>
 
@@ -152,6 +152,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
         Sincronizar Drive
       </button>
+      <button id="btn-bulk-fill" onclick="openBulkFill()" style="display:none" class="items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-indigo-500 transition-all">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        Completar datos masivo
+      </button>
       <button id="btn-signout" onclick="signOut()" class="items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-rose-500 transition-all">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Cerrar sesión
@@ -161,7 +165,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r010</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r011</p>
       </div>
     </div>
   </aside>
@@ -283,6 +287,60 @@
   <div class="drawer-overlay" onclick="closeDrawer()"></div>
   <div class="drawer-panel custom-scrollbar">
     <div id="drawer-content"></div>
+  </div>
+</div>
+
+<!-- BULK FILL MODAL -->
+<div id="bulk-modal" style="display:none" class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[80] flex items-center justify-center p-6">
+  <div class="bg-white rounded-[48px] shadow-2xl p-10 w-full max-w-lg">
+    <div id="bulk-setup">
+      <h2 class="text-2xl font-black text-slate-800 tracking-tighter mb-2">Completar datos masivo</h2>
+      <p class="text-slate-400 font-bold text-sm mb-8">Recorre todos los registros y completa los campos vacíos usando APIs externas.</p>
+      <div class="space-y-4 mb-8">
+        <label class="flex items-center gap-4 p-5 rounded-2xl border-2 border-orange-100 cursor-pointer hover:bg-orange-50 transition-all">
+          <input type="checkbox" id="bulk-do-books" checked class="w-5 h-5 accent-orange-500"/>
+          <div><p class="font-black text-slate-800">Libros <span id="bulk-books-count" class="text-orange-500"></span></p><p class="text-[11px] text-slate-400 font-bold">Busca: sinopsis, ISBN, género, editorial, Wikidata, Wikipedia</p></div>
+        </label>
+        <label class="flex items-center gap-4 p-5 rounded-2xl border-2 border-orange-100 cursor-pointer hover:bg-orange-50 transition-all">
+          <input type="checkbox" id="bulk-do-authors" checked class="w-5 h-5 accent-orange-500"/>
+          <div><p class="font-black text-slate-800">Autores <span id="bulk-authors-count" class="text-orange-500"></span></p><p class="text-[11px] text-slate-400 font-bold">Busca: país, géneros, premios, foto, descripción, obras</p></div>
+        </label>
+        <label class="flex items-center gap-4 p-5 rounded-2xl border-2 border-slate-100 cursor-pointer hover:bg-slate-50 transition-all">
+          <input type="checkbox" id="bulk-only-empty" checked class="w-5 h-5 accent-orange-500"/>
+          <div><p class="font-black text-slate-800">Solo campos vacíos</p><p class="text-[11px] text-slate-400 font-bold">No sobreescribe datos existentes</p></div>
+        </label>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeBulkFill()" class="flex-1 py-4 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">Cancelar</button>
+        <button onclick="startBulkFill()" class="flex-1 py-4 rounded-[20px] bg-indigo-500 hover:bg-indigo-600 text-white font-black text-sm shadow-lg transition-all">Iniciar</button>
+      </div>
+    </div>
+    <div id="bulk-progress" style="display:none" class="space-y-6">
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xl font-black text-slate-800 tracking-tight" id="bulk-phase-title">Procesando...</h2>
+          <span id="bulk-counter" class="text-[11px] font-black text-slate-400 uppercase tracking-widest"></span>
+        </div>
+        <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div id="bulk-bar" class="h-full bg-indigo-500 rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+      </div>
+      <div id="bulk-log" class="max-h-64 overflow-y-auto space-y-1 text-[11px] font-bold custom-scrollbar"></div>
+      <div class="flex gap-3">
+        <button id="bulk-pause-btn" onclick="toggleBulkPause()" class="flex-1 py-3 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-orange-300 hover:text-orange-500 transition-all">⏸ Pausar</button>
+        <button onclick="closeBulkFill()" class="flex-1 py-3 rounded-[20px] border-2 border-rose-100 font-black text-sm text-rose-400 hover:bg-rose-50 transition-all">✕ Detener</button>
+      </div>
+    </div>
+    <div id="bulk-done" style="display:none" class="text-center space-y-6">
+      <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div>
+        <h2 class="text-2xl font-black text-slate-800 mb-2">¡Completado!</h2>
+        <p id="bulk-summary" class="text-slate-500 font-bold text-sm"></p>
+      </div>
+      <button onclick="closeBulkFill()" class="w-full py-4 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm shadow-lg transition-all">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -467,6 +525,8 @@ function startApp(fromGoogle = false) {
 
 function updateCrudVisibility() {
   document.getElementById('btn-add-book').style.display = dataSource === 'google' ? 'flex' : 'none';
+  const bf = document.getElementById('btn-bulk-fill');
+  if (bf) bf.style.display = dataSource === 'google' ? 'flex' : 'none';
 }
 
 // ===== MANUAL UPLOAD =====
@@ -2630,10 +2690,183 @@ async function deleteAuthor(authorId) {
   }
 }
 
+// ===== BULK FILL =====
+let _bulkPaused = false;
+let _bulkStop = false;
+
+function openBulkFill() {
+  _bulkStop = false; _bulkPaused = false;
+  // Update counts
+  const booksWithEmpty = books.filter(b => !b.resumen || !b.genero_libro || !b.ISBN).length;
+  const authorsWithEmpty = authors.filter(a => !a.descripcion || !a.pais || !a.foto_url).length;
+  document.getElementById('bulk-books-count').textContent = `(${booksWithEmpty} con campos vacíos)`;
+  document.getElementById('bulk-authors-count').textContent = `(${authorsWithEmpty} con campos vacíos)`;
+  document.getElementById('bulk-setup').style.display = 'block';
+  document.getElementById('bulk-progress').style.display = 'none';
+  document.getElementById('bulk-done').style.display = 'none';
+  document.getElementById('bulk-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBulkFill() {
+  _bulkStop = true;
+  document.getElementById('bulk-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function toggleBulkPause() {
+  _bulkPaused = !_bulkPaused;
+  document.getElementById('bulk-pause-btn').textContent = _bulkPaused ? '▶ Reanudar' : '⏸ Pausar';
+}
+
+function bulkLog(msg, type='info') {
+  const log = document.getElementById('bulk-log');
+  const colors = {info:'text-slate-500', success:'text-emerald-600', skip:'text-slate-300', error:'text-rose-400'};
+  const el = document.createElement('div');
+  el.className = colors[type] || colors.info;
+  el.textContent = msg;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+
+function bulkSetProgress(current, total, title) {
+  const pct = total > 0 ? Math.round((current/total)*100) : 0;
+  document.getElementById('bulk-bar').style.width = pct + '%';
+  document.getElementById('bulk-counter').textContent = `${current} / ${total}`;
+  if (title) document.getElementById('bulk-phase-title').textContent = title;
+}
+
+async function waitIfPaused() {
+  while (_bulkPaused && !_bulkStop) {
+    await new Promise(r => setTimeout(r, 300));
+  }
+}
+
+async function startBulkFill() {
+  const doBooks   = document.getElementById('bulk-do-books').checked;
+  const doAuthors = document.getElementById('bulk-do-authors').checked;
+  const onlyEmpty = document.getElementById('bulk-only-empty').checked;
+  _bulkStop = false; _bulkPaused = false;
+
+  document.getElementById('bulk-setup').style.display = 'none';
+  document.getElementById('bulk-progress').style.display = 'block';
+  document.getElementById('bulk-log').innerHTML = '';
+
+  let totalFieldsFilled = 0;
+  let totalItemsProcessed = 0;
+  const DELAY = 600; // ms between API calls to avoid rate limiting
+
+  // ---- BOOKS ----
+  if (doBooks && !_bulkStop) {
+    const toProcess = onlyEmpty
+      ? books.filter(b => !b.resumen || !b.genero_libro || !b.ISBN || !b.isbn || !b.editorial || !b.wikidata_id || !b.wikipedia_url_libro)
+      : books;
+
+    bulkLog(`📚 Procesando ${toProcess.length} libros...`, 'info');
+
+    for (let i = 0; i < toProcess.length; i++) {
+      if (_bulkStop) break;
+      await waitIfPaused();
+      const b = toProcess[i];
+      bulkSetProgress(i+1, toProcess.length, `Libros: ${b.titulo||''}`.substring(0,40));
+
+      try {
+        const [gbData, olData, wdData] = await Promise.all([
+          fetchBookFromGoogleBooks(b.titulo, b.Autor),
+          fetchBookFromOpenLibrary(b.titulo, b.Autor),
+          fetchBookWikidata(b.titulo, b.Autor),
+        ]);
+        const fm = buildBookFieldMap(gbData, olData, wdData);
+        const updates = {};
+        const bookFields = ['resumen','genero_libro','temas_clave','ISBN','isbn','editorial',
+          'idioma_original','idioma','anio_publicacion','portada_url','google_books_id',
+          'wikidata_id','wikipedia_url_libro','fuente_resumen','fuente_genero','fuente_isbn'];
+
+        bookFields.forEach(key => {
+          const curVal = b[key];
+          const newVal = fm[key];
+          if (newVal && (!curVal || !onlyEmpty)) { updates[key] = newVal; }
+        });
+
+        if (Object.keys(updates).length > 0) {
+          await updateRowById(SHEET_ID_BOOKS, 'libro_id', b.libro_id, updates);
+          const idx = books.findIndex(x => x.libro_id === b.libro_id);
+          if (idx !== -1) books[idx] = processBooks([{ ...books[idx], ...updates }])[0];
+          totalFieldsFilled += Object.keys(updates).length;
+          bulkLog(`✓ ${b.titulo||''} — ${Object.keys(updates).length} campos`, 'success');
+        } else {
+          bulkLog(`– ${b.titulo||''} — sin datos nuevos`, 'skip');
+        }
+        totalItemsProcessed++;
+      } catch(e) {
+        bulkLog(`✗ Error en "${b.titulo||''}"`, 'error');
+      }
+      await new Promise(r => setTimeout(r, DELAY));
+    }
+  }
+
+  // ---- AUTHORS ----
+  if (doAuthors && !_bulkStop) {
+    const toProcess = onlyEmpty
+      ? authors.filter(a => !a.descripcion || !a.pais || !a.foto_url || !a.generos_literarios)
+      : authors;
+
+    bulkLog(`✍ Procesando ${toProcess.length} autores...`, 'info');
+
+    for (let i = 0; i < toProcess.length; i++) {
+      if (_bulkStop) break;
+      await waitIfPaused();
+      const a = toProcess[i];
+      bulkSetProgress(i+1, toProcess.length, `Autores: ${a.nombre||''}`.substring(0,40));
+
+      try {
+        const [olData, wdData] = await Promise.all([
+          fetchAuthorOpenLibrary(a.nombre),
+          fetchAuthorWikidata(a.nombre),
+        ]);
+        const merged = mergeAuthorData(a.nombre, olData, wdData) || {};
+        const authorFields = ['pais','continente','nacionalidad','genero_autor','autor_vivo',
+          'fecha_nacimiento','fecha_muerte','siglo','epoca','idioma_principal','ocupacion',
+          'generos_literarios','premios_importantes','numero_obras','wikidata_id',
+          'openlibrary_key','descripcion','principales_obras','foto_url','wikipedia_url',
+          'lugar_nacimiento_completo','categorias_wikipedia'];
+
+        const updates = {};
+        authorFields.forEach(key => {
+          const curVal = a[key];
+          const newVal = merged[key];
+          if (newVal && (!curVal || !onlyEmpty)) { updates[key] = String(newVal); }
+        });
+
+        if (Object.keys(updates).length > 0) {
+          await updateRowById(SHEET_ID_AUTHORS, 'autor_id', a.autor_id, updates);
+          const idx = authors.findIndex(x => x.autor_id === a.autor_id);
+          if (idx !== -1) authors[idx] = processAuthors([{ ...authors[idx], ...updates }])[0];
+          totalFieldsFilled += Object.keys(updates).length;
+          bulkLog(`✓ ${a.nombre||''} — ${Object.keys(updates).length} campos`, 'success');
+        } else {
+          bulkLog(`– ${a.nombre||''} — sin datos nuevos`, 'skip');
+        }
+        totalItemsProcessed++;
+      } catch(e) {
+        bulkLog(`✗ Error en "${a.nombre||''}"`, 'error');
+      }
+      await new Promise(r => setTimeout(r, DELAY));
+    }
+  }
+
+  // Done
+  document.getElementById('bulk-progress').style.display = 'none';
+  document.getElementById('bulk-done').style.display = 'block';
+  document.getElementById('bulk-summary').textContent =
+    `${totalItemsProcessed} registros procesados · ${totalFieldsFilled} campos completados`;
+  renderHome();
+  if (activeTab === 'books') renderBooks();
+  if (activeTab === 'authors') renderAuthors();
+}
+
 async function toggleAuthorFavorite(authorId) {
   const idx = authors.findIndex(a => a.autor_id === authorId);
-  if (idx === -1) return;
-  const newFav = !authors[idx].favorite;
   const newFavStr = newFav ? 'Sí' : 'No';
   try {
     await updateRowById(SHEET_ID_AUTHORS, 'autor_id', authorId, { Es_Favorito: newFavStr });
