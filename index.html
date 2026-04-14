@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r009</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r010</p>
   </div>
 </div>
 
@@ -161,7 +161,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r009</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r010</p>
       </div>
     </div>
   </aside>
@@ -2138,48 +2138,73 @@ async function submitReadingExp(bookId) {
 function openEditAuthor(authorId) {
   const a = authors.find(x => x.autor_id === authorId);
   if (!a) return;
-  const f = (label, key, full=false) => {
-    const safeVal = String(a[key] || '').replace(/"/g, '&quot;');
-    return `<div${full?' class="col-span-2"':''}>
-      <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">${label}</label>
-      <input type="text" name="${key}" value="${safeVal}"
-        class="w-full px-4 py-2.5 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
+
+  const fields = [
+    {key:'nombre',                   label:'Nombre'},
+    {key:'pais',                     label:'País'},
+    {key:'continente',               label:'Continente'},
+    {key:'nacionalidad',             label:'Nacionalidad'},
+    {key:'genero_autor',             label:'Género autor'},
+    {key:'autor_vivo',               label:'Autor vivo'},
+    {key:'fecha_nacimiento',         label:'Fecha nacimiento'},
+    {key:'fecha_muerte',             label:'Fecha muerte'},
+    {key:'siglo',                    label:'Siglo'},
+    {key:'epoca',                    label:'Época'},
+    {key:'idioma_principal',         label:'Idioma principal'},
+    {key:'ocupacion',                label:'Ocupación'},
+    {key:'generos_literarios',       label:'Géneros literarios'},
+    {key:'premios_importantes',      label:'Premios importantes'},
+    {key:'numero_obras',             label:'Número de obras'},
+    {key:'wikidata_id',              label:'Wikidata ID'},
+    {key:'openlibrary_key',          label:'OpenLibrary key'},
+    {key:'descripcion',              label:'Descripción', textarea:true},
+    {key:'principales_obras',        label:'Principales obras (top 3–5)', textarea:true},
+    {key:'foto_url',                 label:'URL foto', full:true},
+    {key:'wikipedia_url',            label:'URL Wikipedia', full:true},
+    {key:'lugar_nacimiento_completo',label:'Lugar de nacimiento', full:true},
+    {key:'categorias_wikipedia',     label:'Categorías Wikipedia', full:true},
+  ];
+
+  const row = (f) => {
+    const val = String(a[f.key] || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const isEmpty = !a[f.key];
+    const inputEl = f.textarea
+      ? `<textarea name="${f.key}" rows="2" class="flex-1 px-4 py-2.5 rounded-[16px] border-2 ${isEmpty?'border-dashed border-orange-200 bg-orange-50/30':'border-orange-100'} focus:border-orange-400 font-bold text-sm text-slate-700 outline-none resize-none transition-all">${val}</textarea>`
+      : `<input type="text" name="${f.key}" value="${val}" class="flex-1 px-4 py-2.5 rounded-[16px] border-2 ${isEmpty?'border-dashed border-orange-200 bg-orange-50/30':'border-orange-100'} focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>`;
+    return `<div class="${f.full?'col-span-2':''}">
+      <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">${f.label}${isEmpty?` <span class="text-orange-400">· vacío</span>`:''}</label>
+      <div class="flex gap-2">
+        ${inputEl}
+        <button type="button" onclick="refreshAuthorField('${authorId}','${f.key}')"
+          class="flex-shrink-0 w-9 h-9 mt-0.5 rounded-[12px] bg-slate-100 hover:bg-orange-500 text-slate-400 hover:text-white transition-all flex items-center justify-center" title="Buscar en APIs">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </button>
+      </div>
     </div>`;
   };
-  openDrawer(`<div class="p-10 space-y-8">
-    <div class="flex items-center justify-between">
+
+  openDrawer(`<div class="p-10 space-y-6">
+    <div class="flex items-start justify-between">
       <div>
         <p class="text-orange-500 font-black text-[10px] uppercase tracking-widest mb-1">Editar autor</p>
-        <h2 class="text-2xl font-black text-slate-800 tracking-tighter">${a.nombre||''}</h2>
+        <h2 class="text-2xl font-black text-slate-800 tracking-tighter leading-tight">${a.nombre||''}</h2>
+        ${a.pais?`<p class="text-slate-400 font-bold text-sm">${a.pais}</p>`:''}
       </div>
-      <button onclick="closeDrawer()" class="p-3 rounded-2xl text-slate-300 hover:text-slate-600 transition-all">
+      <button onclick="closeDrawer()" class="p-3 rounded-2xl text-slate-300 hover:text-slate-600 transition-all flex-shrink-0">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <form id="edit-author-form" class="space-y-4" onsubmit="return false">
+    <button type="button" onclick="refreshAllAuthorFields('${authorId}')"
+      class="w-full flex items-center justify-center gap-3 py-3 rounded-[20px] border-2 border-dashed border-orange-200 text-orange-500 font-black text-[11px] uppercase tracking-widest hover:bg-orange-50 transition-all">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Buscar todos los campos vacíos en APIs
+    </button>
+    <form id="edit-author-form" class="space-y-3" onsubmit="return false">
       <div class="grid grid-cols-2 gap-3">
-        ${f('Nombre','nombre')}
-        ${f('País','pais')}
-        ${f('Continente','continente')}
-        ${f('Nacionalidad','nacionalidad')}
-        ${f('Fecha nacimiento','fecha_nacimiento')}
-        ${f('Fecha muerte','fecha_muerte')}
-        ${f('Género autor','genero_autor')}
-        ${f('Autor vivo','autor_vivo')}
-        ${f('Idioma principal','idioma_principal')}
-        ${f('Ocupación','ocupacion')}
-        ${f('Géneros literarios','generos_literarios')}
-        ${f('Premios importantes','premios_importantes')}
-        ${f('Número de obras','numero_obras')}
-        ${f('Wikidata ID','wikidata_id')}
-        ${f('Descripción','descripcion',true)}
-        ${f('Principales obras','principales_obras',true)}
-        ${f('URL foto','foto_url',true)}
-        ${f('URL Wikipedia','wikipedia_url',true)}
-        ${f('Lugar de nacimiento','lugar_nacimiento_completo',true)}
+        ${fields.map(f => row(f)).join('')}
       </div>
       <button type="button" onclick="saveEditAuthor('${authorId}')"
-        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all mt-4">
+        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest py-5 rounded-[24px] shadow-lg shadow-orange-100 transition-all mt-2">
         Guardar cambios
       </button>
     </form>
@@ -2191,16 +2216,14 @@ async function saveEditAuthor(authorId) {
   if (idx === -1) return;
   const form = document.getElementById('edit-author-form');
   const fields = {};
-  form.querySelectorAll('input').forEach(el => { if (el.name) fields[el.name] = el.value; });
+  form.querySelectorAll('input,textarea').forEach(el => { if (el.name) fields[el.name] = el.value; });
   showDrawerLoading('Guardando autor en Google Drive...');
   try {
     await updateRowById(SHEET_ID_AUTHORS, 'autor_id', authorId, fields);
-    // Update local state
     authors[idx] = processAuthors([{ ...authors[idx], ...fields }])[0];
     hideDrawerLoading();
     closeDrawer();
-    renderAuthors();
-    renderHome();
+    renderAuthors(); renderHome();
     showToast('✓ Autor actualizado correctamente');
   } catch(err) {
     console.error(err);
@@ -2208,6 +2231,64 @@ async function saveEditAuthor(authorId) {
     hideDrawerLoading();
   }
 }
+
+async function refreshAuthorField(authorId, fieldKey) {
+  const a = authors.find(x => x.autor_id === authorId);
+  if (!a) return;
+  const input = document.querySelector(`#edit-author-form [name="${fieldKey}"]`);
+  if (!input) return;
+  const origClass = input.className;
+  input.classList.add('opacity-50');
+  input.disabled = true;
+  try {
+    const [olData, wdData] = await Promise.all([
+      fetchAuthorOpenLibrary(a.nombre),
+      fetchAuthorWikidata(a.nombre),
+    ]);
+    const merged = mergeAuthorData(a.nombre, olData, wdData) || {};
+    const val = merged[fieldKey];
+    if (val) {
+      input.value = String(val);
+      input.className = origClass.replace(/border-orange-100|border-dashed border-orange-200 bg-orange-50\/30/g,'') + ' border-emerald-400 bg-emerald-50/30';
+      setTimeout(() => { input.className = origClass; input.disabled = false; }, 1800);
+    } else {
+      showToast(`No se encontró "${fieldKey}" en las APIs`, true);
+      input.className = origClass; input.disabled = false;
+    }
+  } catch(e) {
+    input.className = origClass; input.disabled = false;
+    showToast('Error buscando en APIs', true);
+  }
+}
+
+async function refreshAllAuthorFields(authorId) {
+  const a = authors.find(x => x.autor_id === authorId);
+  if (!a) return;
+  const form = document.getElementById('edit-author-form');
+  if (!form) return;
+  showDrawerLoading('Buscando campos vacíos en APIs...');
+  try {
+    const [olData, wdData] = await Promise.all([
+      fetchAuthorOpenLibrary(a.nombre),
+      fetchAuthorWikidata(a.nombre),
+    ]);
+    const merged = mergeAuthorData(a.nombre, olData, wdData) || {};
+    let filled = 0;
+    form.querySelectorAll('input,textarea').forEach(el => {
+      if (el.name && !el.value.trim() && merged[el.name]) {
+        el.value = String(merged[el.name]);
+        el.style.borderColor = '#34d399';
+        filled++;
+      }
+    });
+    hideDrawerLoading();
+    showToast(filled > 0 ? `✓ ${filled} campo${filled>1?'s':''} completado${filled>1?'s':''}` : 'No se encontraron datos nuevos');
+  } catch(e) {
+    hideDrawerLoading();
+    showToast('Error buscando en APIs', true);
+  }
+}
+
 
 // ===== EDIT BOOK =====
 function openEditBook(bookId) {
