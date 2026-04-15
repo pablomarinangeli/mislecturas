@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r014</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r016</p>
   </div>
 </div>
 
@@ -165,7 +165,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r014</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r016</p>
       </div>
     </div>
   </aside>
@@ -200,9 +200,11 @@
       <div id="stat-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6"></div>
       <div id="fav-sections" class="space-y-20"></div>
       <div id="rank-section" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8"></div>
-      <div id="continent-section"></div>
-      <div id="rating-rank-section"></div>
-      <div id="year-section"></div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div id="continent-section"></div>
+        <div id="rating-rank-section"></div>
+        <div id="year-section"></div>
+      </div>
     </div>
 
     <!-- BOOKS TAB -->
@@ -218,6 +220,22 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Agregar libro
         </button>
+      </div>
+      <!-- Genre / Subgenre filters -->
+      <div class="flex flex-wrap gap-3 items-center">
+        <div class="flex items-center gap-2 bg-white border border-orange-50 rounded-[28px] px-5 py-3 shadow-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-400"><path d="M4 6h16M4 12h8m-8 6h12"/></svg>
+          <select id="genero-filter" class="text-[11px] font-black text-slate-600 outline-none bg-transparent" onchange="setGeneroFilter(this.value)">
+            <option value="">Todos los géneros</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2 bg-white border border-orange-50 rounded-[28px] px-5 py-3 shadow-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-400"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          <select id="subgenero-filter" class="text-[11px] font-black text-slate-600 outline-none bg-transparent" onchange="setSubgeneroFilter(this.value)">
+            <option value="">Todos los subgéneros</option>
+          </select>
+        </div>
+        <button id="genre-clear-btn" onclick="clearGenreFilters()" style="display:none" class="text-[10px] font-black text-orange-400 hover:text-orange-600 uppercase tracking-widest transition-colors">✕ Limpiar géneros</button>
       </div>
       <div id="year-filter-wrap" style="display:none" class="items-center gap-3 flex-wrap bg-white border border-orange-50 rounded-[28px] px-6 py-4 w-fit shadow-sm">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-orange-400"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -392,6 +410,8 @@ let addBookState = {}, _expFav = false, _expRating = 0;
 // Pagination
 let bookPage = 1, authorPage = 1, pageSize = 24;
 let ratingFilter = new Set(); // empty = todas
+let generoFilter = ''; // genre filter
+let subgeneroFilter = ''; // subgenre filter
 
 // ===== SHOW/HIDE HELPERS (CSS-controlled) =====
 function show(id, displayType = 'flex') { const el = document.getElementById(id); if(el) el.style.display = displayType; }
@@ -531,7 +551,7 @@ async function syncFromDrive() {
     const [bd, ad] = await Promise.all([fetchSheet(SHEET_ID_BOOKS), fetchSheet(SHEET_ID_AUTHORS)]);
     books = processBooks(bd); authors = processAuthors(ad);
     renderHome();
-    if (activeTab === 'books') renderBooks();
+    if (activeTab === 'books') { renderBooks(); populateGeneroSelect(); populateSubgeneroSelect(); }
     if (activeTab === 'authors') renderAuthors();
     showToast('✓ Datos actualizados desde Google Drive');
   } catch(e) { showToast('⚠ Error al sincronizar.', true); }
@@ -729,10 +749,12 @@ function getStats() {
   authors.forEach(a => {
     if(a.pais) counts.countries[a.pais]=(counts.countries[a.pais]||0)+1;
     if(a.continente) counts.continents[a.continente]=(counts.continents[a.continente]||0)+1;
-    const g=a.genero_autor||'Otro';
-    if(counts.genders[g]!==undefined) counts.genders[g]++; else counts.genders['Otro']++;
+    const g=(a.genero_autor||'').trim().toLowerCase();
+    if(g==='mujer') counts.genders.Mujer++;
+    else if(g==='hombre') counts.genders.Hombre++;
+    else counts.genders.Otro++;
   });
-  const top=(obj,n=5)=>Object.entries(obj).filter(([k])=>k&&k!=='undefined').map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count).slice(0,n);
+  const top=(obj,n=10)=>Object.entries(obj).filter(([k])=>k&&k!=='undefined').map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count).slice(0,n);
   return {
     rankedAuthors:top(counts.authors), rankedCountries:top(counts.countries), rankedGenres:top(counts.genres),
     rankedContinents:Object.entries(counts.continents).filter(([k])=>k&&k!=='undefined').map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count),
@@ -812,8 +834,22 @@ function renderHome() {
   const total = s.genders.Mujer+s.genders.Hombre+s.genders.Otro;
   const fP = total>0?(s.genders.Mujer/total)*100:0;
   const mP = total>0?(s.genders.Hombre/total)*100:0;
-  const gSvg = total===0?`<circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="4"/>`:`<circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="4"/><circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#fb7185" stroke-width="4" stroke-dasharray="${fP} ${100-fP}" stroke-linecap="round"/><circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#38bdf8" stroke-width="4" stroke-dasharray="${mP} ${100-mP}" stroke-dashoffset="-${fP}" stroke-linecap="round"/>`;
-  const rankHtml = (title, items, color) => { const max=items[0]?.count||1; return `<div class="bg-white p-10 rounded-[48px] border border-orange-50 shadow-sm"><h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8">${title}</h3><div class="space-y-6">${items.map(item=>`<div><div class="flex justify-between items-end mb-2"><span class="text-xs font-black text-slate-700 truncate w-4/5">${item.name}</span><span class="text-[10px] font-bold text-slate-400">${item.count}</span></div><div class="h-2 bg-slate-50 rounded-full overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${(item.count/max)*100}%;opacity:.6"></div></div></div>`).join('')}</div></div>`; };
+  const oP = total>0?(s.genders.Otro/total)*100:0;
+  // Build 3-segment donut: Mujer (rose), Hombre (sky), Otros (violet)
+  // Each segment uses dasharray and dashoffset on the circumference (100 units)
+  let gSvg;
+  if (total === 0) {
+    gSvg = `<circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="4"/>`;
+  } else {
+    gSvg = `<circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#f1f5f9" stroke-width="4"/>
+      <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#fb7185" stroke-width="4"
+        stroke-dasharray="${fP} ${100-fP}" stroke-dashoffset="0" stroke-linecap="butt"/>
+      <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#38bdf8" stroke-width="4"
+        stroke-dasharray="${mP} ${100-mP}" stroke-dashoffset="${-fP}" stroke-linecap="butt"/>
+      <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#a78bfa" stroke-width="4"
+        stroke-dasharray="${oP} ${100-oP}" stroke-dashoffset="${-(fP+mP)}" stroke-linecap="butt"/>`;
+  }
+  const rankHtml = (title, items, color) => { const max=items[0]?.count||1; return `<div class="bg-white p-8 rounded-[40px] border border-orange-50 shadow-sm h-full"><h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-6">${title}</h3><div class="space-y-4">${items.map(item=>`<div><div class="flex justify-between items-end mb-1.5"><span class="text-xs font-black text-slate-700 truncate w-4/5">${item.name}</span><span class="text-[10px] font-bold text-slate-400">${item.count}</span></div><div class="h-1.5 bg-slate-50 rounded-full overflow-hidden"><div class="h-full rounded-full ${color}" style="width:${(item.count/max)*100}%;opacity:.6"></div></div></div>`).join('')}</div></div>`; };
   document.getElementById('rank-section').innerHTML = `
     <div class="bg-white p-10 rounded-[48px] border border-orange-50 shadow-sm flex flex-col items-center">
       <h3 class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 mb-8 self-start">Balance Género Autores</h3>
@@ -821,8 +857,24 @@ function renderHome() {
         <div class="absolute inset-0 flex flex-col items-center justify-center"><span class="text-3xl font-black text-slate-800 tracking-tighter">${authors.length}</span><span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Autores</span></div>
       </div>
       <div class="flex justify-around w-full">
-        <div class="text-center"><div class="w-3 h-3 rounded-full bg-rose-400 mx-auto mb-2"></div><span class="text-[10px] font-black text-slate-400 uppercase">Mujeres</span><p class="font-black text-slate-800">${s.genders.Mujer}</p></div>
-        <div class="text-center"><div class="w-3 h-3 rounded-full bg-sky-400 mx-auto mb-2"></div><span class="text-[10px] font-black text-slate-400 uppercase">Hombres</span><p class="font-black text-slate-800">${s.genders.Hombre}</p></div>
+        <div class="text-center cursor-pointer" onclick="setAuthorFilters({genero:'Mujer'})">
+          <div class="w-3 h-3 rounded-full bg-rose-400 mx-auto mb-2"></div>
+          <span class="text-[10px] font-black text-slate-400 uppercase">Mujeres</span>
+          <p class="font-black text-slate-800">${s.genders.Mujer}</p>
+          <p class="text-[9px] text-slate-300">${total>0?((s.genders.Mujer/total)*100).toFixed(0):'0'}%</p>
+        </div>
+        <div class="text-center cursor-pointer" onclick="setAuthorFilters({genero:'Hombre'})">
+          <div class="w-3 h-3 rounded-full bg-sky-400 mx-auto mb-2"></div>
+          <span class="text-[10px] font-black text-slate-400 uppercase">Hombres</span>
+          <p class="font-black text-slate-800">${s.genders.Hombre}</p>
+          <p class="text-[9px] text-slate-300">${total>0?((s.genders.Hombre/total)*100).toFixed(0):'0'}%</p>
+        </div>
+        <div class="text-center cursor-pointer" onclick="setAuthorFilters({genero:'Otros'})">
+          <div class="w-3 h-3 rounded-full bg-violet-400 mx-auto mb-2"></div>
+          <span class="text-[10px] font-black text-slate-400 uppercase">Otros</span>
+          <p class="font-black text-slate-800">${s.genders.Otro}</p>
+          <p class="text-[9px] text-slate-300">${total>0?((s.genders.Otro/total)*100).toFixed(0):'0'}%</p>
+        </div>
       </div>
     </div>
     ${rankHtml('Autores Más Leídos', s.rankedAuthors, 'bg-orange-400')}
@@ -839,95 +891,79 @@ function renderHome() {
     const totalCont = s.rankedContinents.reduce((acc,c)=>acc+c.count,0);
     const maxCont = s.rankedContinents[0]?.count || 1;
     document.getElementById('continent-section').innerHTML = `
-      <div class="bg-white p-10 rounded-[48px] border border-orange-50 shadow-sm">
-        <div class="flex items-center gap-4 mb-10">
-          <div class="w-12 h-12 rounded-2xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-indigo-400">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <div class="bg-white p-8 rounded-[40px] border border-orange-50 shadow-sm h-full">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-9 h-9 rounded-xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-indigo-400">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
           </div>
-          <div>
-            <h3 class="text-xl font-black text-slate-800 tracking-tighter uppercase">Autores por Continente</h3>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">${totalCont} autores con continente registrado</p>
-          </div>
+          <h3 class="text-[11px] font-black text-slate-500 tracking-[0.15em] uppercase">Autores por Continente</h3>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="space-y-3">
           ${s.rankedContinents.map(c => {
             const pct = Math.round((c.count/maxCont)*100);
-            const pctTotal = ((c.count/totalCont)*100).toFixed(1);
+            const pctTotal = ((c.count/totalCont)*100).toFixed(0);
             const color = continentColors[c.name] || 'bg-slate-400';
-            return `<div class="flex items-center gap-4 cursor-pointer hover:bg-slate-50 px-4 py-3 rounded-2xl transition-all group"
-              onclick="setAuthorFilters({continente:'${c.name}'})">
-              <div class="flex-1 min-w-0">
-                <div class="flex justify-between items-center mb-1.5">
-                  <span class="text-xs font-black text-slate-700 truncate group-hover:text-indigo-600 transition-colors">${c.name}</span>
-                  <div class="flex items-center gap-2 flex-shrink-0 ml-2">
-                    <span class="text-sm font-black text-slate-700">${c.count}</span>
-                    <span class="text-[10px] font-bold text-slate-300">${pctTotal}%</span>
-                  </div>
-                </div>
-                <div class="h-2.5 bg-slate-50 rounded-full overflow-hidden">
-                  <div class="h-full rounded-full ${color} transition-all duration-500 opacity-70 group-hover:opacity-100" style="width:${pct}%"></div>
-                </div>
+            return `<div class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 px-2 py-1.5 rounded-xl transition-all group" onclick="setAuthorFilters({continente:'${c.name}'})">
+              <span class="text-[11px] font-black text-slate-700 truncate flex-1 group-hover:text-indigo-600">${c.name}</span>
+              <div class="w-24 h-1.5 bg-slate-50 rounded-full overflow-hidden flex-shrink-0">
+                <div class="h-full rounded-full ${color} opacity-70" style="width:${pct}%"></div>
               </div>
+              <span class="text-[10px] font-bold text-slate-400 w-10 text-right flex-shrink-0">${c.count} <span class="text-slate-200">${pctTotal}%</span></span>
             </div>`;
           }).join('')}
         </div>
       </div>`;
   }
 
-  // Rating ranking — top rated books
-  // Rating distribution chart
+  // Rating distribution — compact
   const ratingCounts = {1:0, 2:0, 3:0, 4:0, 5:0};
   books.filter(b=>b.estado==='Leido'&&b.rating>0).forEach(b=>{ if(ratingCounts[b.rating]!==undefined) ratingCounts[b.rating]++; });
   const totalRated = Object.values(ratingCounts).reduce((a,b)=>a+b,0);
   if (totalRated > 0) {
     const maxCount = Math.max(...Object.values(ratingCounts));
     document.getElementById('rating-rank-section').innerHTML = `
-      <div class="bg-white p-10 rounded-[48px] border border-orange-50 shadow-sm">
-        <div class="flex items-center gap-4 mb-10">
-          <div class="w-12 h-12 rounded-2xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-amber-400">${icons.starFill(22)}</div>
-          <div>
-            <h3 class="text-xl font-black text-slate-800 tracking-tighter uppercase">Distribución por Calificación</h3>
-            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">${totalRated} libros calificados</p>
-          </div>
+      <div class="bg-white p-8 rounded-[40px] border border-orange-50 shadow-sm h-full">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-9 h-9 rounded-xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-amber-400">${icons.starFill(16)}</div>
+          <h3 class="text-[11px] font-black text-slate-500 tracking-[0.15em] uppercase">Distribución por Calificación</h3>
         </div>
-        <div class="space-y-5">
+        <div class="space-y-3">
           ${[5,4,3,2,1].map(star => {
             const count = ratingCounts[star];
             const pct = maxCount > 0 ? Math.round((count/maxCount)*100) : 0;
-            const pctTotal = totalRated > 0 ? ((count/totalRated)*100).toFixed(1) : '0';
-            return `<div class="flex items-center gap-4 cursor-pointer hover:bg-orange-50 px-4 py-3 rounded-2xl transition-all group" onclick="setTab('books');setFilter('Leido');ratingFilter=new Set([${star}]);renderRatingFilterBtns();renderBooks()">
-              <div class="flex gap-0.5 flex-shrink-0 w-20">${starsHtml(star,14)}</div>
-              <div class="flex-1 h-4 bg-slate-50 rounded-full overflow-hidden">
-                <div class="h-full rounded-full bg-amber-400 transition-all duration-500 group-hover:bg-orange-500" style="width:${pct}%"></div>
+            const pctTotal = totalRated > 0 ? ((count/totalRated)*100).toFixed(0) : '0';
+            return `<div class="flex items-center gap-3 cursor-pointer hover:bg-orange-50 px-2 py-1.5 rounded-xl transition-all group" onclick="setTab('books');setFilter('Leido');ratingFilter=new Set([${star}]);renderRatingFilterBtns();renderBooks()">
+              <div class="flex gap-0.5 flex-shrink-0">${starsHtml(star,11)}</div>
+              <div class="flex-1 h-1.5 bg-slate-50 rounded-full overflow-hidden">
+                <div class="h-full rounded-full bg-amber-400 group-hover:bg-orange-500 transition-colors" style="width:${pct}%"></div>
               </div>
-              <div class="flex items-center gap-2 flex-shrink-0 w-24 justify-end">
-                <span class="text-sm font-black text-slate-700">${count}</span>
-                <span class="text-[10px] font-bold text-slate-300">${pctTotal}%</span>
-              </div>
+              <span class="text-[10px] font-bold text-slate-500 w-16 text-right flex-shrink-0">${count} <span class="text-slate-200">${pctTotal}%</span></span>
             </div>`;
           }).join('')}
         </div>
       </div>`;
   }
 
-  // Year chart
+  // Year chart — compact
   const yearCounts = {};
   books.filter(b=>b.estado==='Leido'&&b.Anio_lectura).forEach(b=>{const y=String(b.Anio_lectura).trim();if(y)yearCounts[y]=(yearCounts[y]||0)+1;});
   const entries = Object.entries(yearCounts).sort(([a],[b])=>Number(a)-Number(b));
   if (entries.length > 0) {
     const maxV = Math.max(...entries.map(([,v])=>v));
     document.getElementById('year-section').innerHTML = `
-      <div class="bg-white p-12 rounded-[60px] border border-orange-50 shadow-sm">
-        <div class="flex items-center gap-4 mb-12">
-          <div class="w-12 h-12 rounded-2xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-orange-400">${icons.barChart}</div>
-          <div><h3 class="text-2xl font-black text-slate-800 tracking-tighter uppercase">Libros por Año</h3>
-          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Clic en una barra para filtrar</p></div>
+      <div class="bg-white p-8 rounded-[40px] border border-orange-50 shadow-sm h-full">
+        <div class="flex items-center gap-3 mb-6">
+          <div class="w-9 h-9 rounded-xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-orange-400">${icons.barChart}</div>
+          <div>
+            <h3 class="text-[11px] font-black text-slate-500 tracking-[0.15em] uppercase">Libros por Año</h3>
+            <p class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">Clic para filtrar</p>
+          </div>
         </div>
-        <div class="flex items-end gap-3 overflow-x-auto pb-2 scrollbar-hide" style="min-height:180px">
-          ${entries.map(([year,count])=>{const h=Math.max(24,Math.round((count/maxV)*150));return`<div class="flex flex-col items-center gap-2 flex-shrink-0 cursor-pointer" onclick="filterByYear('${year}')" onmouseover="this.querySelector('.bar').style.background='#f97316'" onmouseout="this.querySelector('.bar').style.background='#fed7aa'">
-            <span class="text-[11px] font-black text-orange-500" style="opacity:0" id="yc-${year}">${count}</span>
-            <div class="bar w-12 rounded-t-2xl transition-all" style="height:${h}px;background:#fed7aa" onmouseover="document.getElementById('yc-${year}').style.opacity=1" onmouseout="document.getElementById('yc-${year}').style.opacity=0"></div>
-            <span class="text-[11px] font-black text-slate-500">${year}</span>
+        <div class="flex items-end gap-2 overflow-x-auto pb-2 scrollbar-hide" style="min-height:120px">
+          ${entries.map(([year,count])=>{const h=Math.max(16,Math.round((count/maxV)*100));return`<div class="flex flex-col items-center gap-1 flex-shrink-0 cursor-pointer group" onclick="filterByYear('${year}')">
+            <span class="text-[9px] font-black text-orange-500 opacity-0 group-hover:opacity-100 transition-opacity">${count}</span>
+            <div class="w-7 rounded-t-xl transition-all bg-orange-100 group-hover:bg-orange-400" style="height:${h}px"></div>
+            <span class="text-[9px] font-black text-slate-400" style="writing-mode:vertical-rl;transform:rotate(180deg);height:28px">${year}</span>
           </div>`}).join('')}
         </div>
       </div>`;
@@ -998,8 +1034,60 @@ function getFilteredBooks() {
     const mf = bookFilter==='todos'||b.estado===bookFilter;
     const my = selectedYears.size===0||selectedYears.has(String(b.Anio_lectura||'').trim());
     const mr = ratingFilter.size===0||ratingFilter.has(b.rating||0);
-    return ms&&mf&&my&&mr;
+    const mg = !generoFilter || (b.genero_libro||'').toLowerCase() === generoFilter.toLowerCase();
+    const msg = !subgeneroFilter || (b.subgenero_libro||'').toLowerCase() === subgeneroFilter.toLowerCase();
+    return ms&&mf&&my&&mr&&mg&&msg;
   }).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||'','es',{sensitivity:'base'}));
+}
+
+function populateGeneroSelect() {
+  const sel = document.getElementById('genero-filter');
+  if (!sel) return;
+  const generos = [...new Set(books.map(b=>b.genero_libro||'').filter(Boolean))].sort();
+  const cur = generoFilter;
+  sel.innerHTML = '<option value="">Todos los géneros</option>' +
+    generos.map(g=>`<option value="${g}" ${g===cur?'selected':''}>${g}</option>`).join('');
+}
+
+function populateSubgeneroSelect() {
+  const sel = document.getElementById('subgenero-filter');
+  if (!sel) return;
+  // Only show subgenres belonging to selected genre
+  const filtered = generoFilter
+    ? books.filter(b=>b.genero_libro===generoFilter)
+    : books;
+  const subgeneros = [...new Set(filtered.map(b=>b.subgenero_libro||'').filter(Boolean))].sort();
+  const cur = subgeneroFilter;
+  sel.innerHTML = '<option value="">Todos los subgéneros</option>' +
+    subgeneros.map(sg=>`<option value="${sg}" ${sg===cur?'selected':''}>${sg}</option>`).join('');
+}
+
+function setGeneroFilter(val) {
+  generoFilter = val;
+  subgeneroFilter = ''; // reset subgenre when genre changes
+  bookPage = 1;
+  populateSubgeneroSelect(); // update subgenre options
+  const clearBtn = document.getElementById('genre-clear-btn');
+  if (clearBtn) clearBtn.style.display = (val||subgeneroFilter) ? 'inline' : 'none';
+  renderBooks();
+}
+
+function setSubgeneroFilter(val) {
+  subgeneroFilter = val;
+  bookPage = 1;
+  const clearBtn = document.getElementById('genre-clear-btn');
+  if (clearBtn) clearBtn.style.display = (generoFilter||val) ? 'inline' : 'none';
+  renderBooks();
+}
+
+function clearGenreFilters() {
+  generoFilter = ''; subgeneroFilter = '';
+  bookPage = 1;
+  const gSel = document.getElementById('genero-filter'); if (gSel) gSel.value = '';
+  const sgSel = document.getElementById('subgenero-filter'); if (sgSel) sgSel.value = '';
+  const clearBtn = document.getElementById('genre-clear-btn'); if (clearBtn) clearBtn.style.display = 'none';
+  populateSubgeneroSelect();
+  renderBooks();
 }
 
 function renderBooks() {
@@ -1040,6 +1128,7 @@ function renderBooks() {
       <div class="flex-1 min-w-0">
         <h4 class="font-black text-slate-800 truncate text-xl">${b.titulo||''}</h4>
         <p class="text-xs font-bold text-orange-500 uppercase tracking-[0.2em]">${b.Autor||''}</p>
+        ${(b.genero_libro||b.subgenero_libro)?`<p class="text-[10px] font-bold text-slate-300 mt-1">${[b.genero_libro,b.subgenero_libro].filter(Boolean).join(' · ')}</p>`:''}
       </div>
       <div class="hidden md:flex flex-col items-end min-w-[120px]">
         <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Lectura</span>
@@ -1444,7 +1533,11 @@ function setTab(tab) {
   document.getElementById('page-subtitle').innerHTML=`<span class="w-12 h-1 bg-orange-200 rounded-full inline-block"></span> ${subs[tab]}`;
   const hc=document.getElementById('header-controls');
   hc.style.display=tab!=='home'?'flex':'none';
-  if(tab==='books') renderBooks();
+  if(tab==='books') {
+    renderBooks();
+    populateGeneroSelect();
+    populateSubgeneroSelect();
+  }
   if(tab==='authors') {
     renderAuthors();
     populateAuthorContinenteSelect();
