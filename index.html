@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r018</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r020</p>
   </div>
 </div>
 
@@ -156,6 +156,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         Completar datos masivo
       </button>
+      <button id="btn-genre-editor" onclick="openGenreEditor()" style="display:none" class="items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-emerald-500 transition-all">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Editor de géneros
+      </button>
       <button id="btn-signout" onclick="signOut()" class="items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-rose-500 transition-all">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Cerrar sesión
@@ -165,7 +169,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r018</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r020</p>
       </div>
     </div>
   </aside>
@@ -323,6 +327,89 @@
   <div class="drawer-overlay" onclick="closeDrawer()"></div>
   <div class="drawer-panel custom-scrollbar">
     <div id="drawer-content"></div>
+  </div>
+</div>
+
+<!-- GENRE EDITOR MODAL -->
+<div id="genre-modal" style="display:none" class="fixed inset-0 bg-slate-900/80 backdrop-blur-xl z-[80] flex items-start justify-center p-6 overflow-y-auto">
+  <div class="bg-white rounded-[48px] shadow-2xl w-full max-w-4xl my-6">
+    <!-- Header -->
+    <div class="flex items-start justify-between p-10 pb-0">
+      <div>
+        <h2 class="text-2xl font-black text-slate-800 tracking-tighter">Editor de géneros</h2>
+        <p id="genre-modal-subtitle" class="text-slate-400 font-bold text-sm mt-1"></p>
+      </div>
+      <button onclick="closeGenreEditor()" class="p-3 rounded-2xl text-slate-300 hover:text-slate-600 transition-all flex-shrink-0">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <!-- Book info + genre picker -->
+    <div id="genre-editor-body" class="p-10 space-y-8">
+      <!-- Book card -->
+      <div id="genre-book-card" class="flex gap-5 p-6 bg-orange-50 rounded-[28px]"></div>
+
+      <!-- Current genre -->
+      <div>
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Género actual</p>
+        <div id="genre-current" class="text-sm font-black text-slate-500 px-5 py-3 bg-slate-50 rounded-2xl inline-block min-w-[120px]">—</div>
+      </div>
+
+      <!-- Genre grid buttons -->
+      <div>
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Seleccionar género</p>
+        <div id="genre-btn-grid" class="flex flex-wrap gap-3"></div>
+        <!-- Custom input -->
+        <div class="flex items-center gap-3 mt-4">
+          <input id="genre-custom-input" type="text" placeholder="Escribir género personalizado..."
+            class="flex-1 px-5 py-3 rounded-[18px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
+          <button onclick="applyGenreFromInput()" class="px-5 py-3 rounded-[18px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm transition-all">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- Subgenero -->
+      <div>
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Subgénero <span class="text-slate-300">(opcional)</span></p>
+        <input id="genre-subgenero-input" type="text" placeholder="Subgénero..."
+          class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
+      </div>
+
+      <!-- Navigation buttons -->
+      <div class="flex gap-3">
+        <button onclick="genrePrev()" id="genre-prev-btn" class="flex items-center gap-2 px-6 py-4 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-orange-300 hover:text-orange-500 transition-all disabled:opacity-30">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+          Anterior
+        </button>
+        <button onclick="genreSaveAndNext()" id="genre-next-btn" class="flex-1 flex items-center justify-center gap-2 py-4 rounded-[20px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm shadow-lg transition-all">
+          Guardar y siguiente
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+        <button onclick="genreSkip()" class="px-6 py-4 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-300 hover:border-slate-300 hover:text-slate-500 transition-all">
+          Saltar
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <span id="genre-progress-label" class="text-[10px] font-black text-slate-400 uppercase tracking-widest"></span>
+          <span id="genre-progress-pct" class="text-[10px] font-black text-orange-500"></span>
+        </div>
+        <div class="h-2 bg-slate-50 rounded-full overflow-hidden">
+          <div id="genre-progress-bar" class="h-full bg-orange-400 rounded-full transition-all duration-300" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Done state -->
+      <div id="genre-done" style="display:none" class="text-center space-y-4 py-6">
+        <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h3 class="text-xl font-black text-slate-800">¡Géneros actualizados!</h3>
+        <p id="genre-done-summary" class="text-slate-400 font-bold text-sm"></p>
+        <button onclick="closeGenreEditor()" class="px-8 py-4 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm shadow-lg transition-all">Cerrar</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -568,6 +655,8 @@ function updateCrudVisibility() {
   document.getElementById('btn-add-book').style.display = dataSource === 'google' ? 'flex' : 'none';
   const bf = document.getElementById('btn-bulk-fill');
   if (bf) bf.style.display = dataSource === 'google' ? 'flex' : 'none';
+  const ge = document.getElementById('btn-genre-editor');
+  if (ge) ge.style.display = dataSource === 'google' ? 'flex' : 'none';
 }
 
 // ===== MANUAL UPLOAD =====
@@ -926,28 +1015,66 @@ function renderHome() {
       const colorScale = d3.scaleSequential().domain([0,maxCountryCount]).interpolator(d3.interpolate('#dfe3f5','#3730a3'));
       // Spanish → English country name map for TopoJSON matching
       const esToEn = {
-        'espana':'spain','estados unidos':'united states of america','francia':'france',
-        'reino unido':'united kingdom','alemania':'germany','italia':'italy',
-        'rusia':'russia','japon':'japan','brasil':'brazil','mexico':'mexico',
-        'republica dominicana':'dominican rep.','panama':'panama','canada':'canada',
-        'australia':'australia','nueva zelanda':'new zealand','nueva zelandia':'new zealand',
-        'sudafrica':'south africa','africa del sur':'south africa','nigeria':'nigeria',
-        'egipto':'egypt','marruecos':'morocco','argelia':'algeria','etiopia':'ethiopia',
-        'kenia':'kenya','camerun':'cameroon','india':'india','pakistan':'pakistan',
-        'bangladesh':'bangladesh','afganistan':'afghanistan','iran':'iran','irak':'iraq',
-        'turquia':'turkey','arabia saudita':'saudi arabia','arabia saudi':'saudi arabia',
-        'emiratos arabes unidos':'united arab emirates','siria':'syria','libano':'lebanon',
-        'jordania':'jordan','corea del sur':'south korea','corea del norte':'north korea',
+        // Listed countries (exact normalized forms)
+        'afganistan':'afghanistan',
+        'alemania':'germany',
+        'argelia':'algeria',
+        'argentina':'argentina',
+        'australia':'australia',
+        'belgica':'belgium',
+        'brasil':'brazil',
+        'bulgaria':'bulgaria',
+        'canada':'canada',
+        'chile':'chile',
+        'colombia':'colombia',
+        'corea del sur':'south korea',
+        'cuba':'cuba',
+        'escocia':'united kingdom',       // part of UK in world-atlas
+        'espana':'spain',
+        'estados unidos':'united states of america',
+        'francia':'france',
+        'gales':'united kingdom',         // part of UK in world-atlas
+        'grecia':'greece',
+        'hungria':'hungary',
+        'india':'india',
+        'inglaterra':'united kingdom',    // part of UK in world-atlas
+        'iran':'iran',
+        'irlanda':'ireland',
+        'irlanda del norte':'united kingdom', // part of UK
+        'italia':'italy',
+        'japon':'japan',
+        'mexico':'mexico',
+        'nicaragua':'nicaragua',
+        'nigeria':'nigeria',
+        'noruega':'norway',
+        'peru':'peru',
+        'portugal':'portugal',
+        'republica checa':'czechia',
+        'rumania':'romania',
+        'sudafrica':'south africa',
+        'suecia':'sweden',
+        'suiza':'switzerland',
+        'ucrania':'ukraine',
+        'uruguay':'uruguay',
+        'zambia':'zambia',
+        // Extra common mappings
+        'reino unido':'united kingdom',
+        'rusia':'russia','japon':'japan','nueva zelanda':'new zealand',
+        'nueva zelandia':'new zealand','africa del sur':'south africa',
+        'egipto':'egypt','marruecos':'morocco','etiopia':'ethiopia',
+        'kenia':'kenya','camerun':'cameroon','pakistan':'pakistan',
+        'bangladesh':'bangladesh','irak':'iraq','turquia':'turkey',
+        'arabia saudita':'saudi arabia','arabia saudi':'saudi arabia',
+        'emiratos arabes unidos':'united arab emirates','siria':'syria',
+        'libano':'lebanon','jordania':'jordan','corea del norte':'north korea',
         'tailandia':'thailand','indonesia':'indonesia','malasia':'malaysia',
         'filipinas':'philippines','myanmar':'myanmar','camboya':'cambodia',
         'mongolia':'mongolia','kazajistan':'kazakhstan','uzbekistan':'uzbekistan',
-        'azerbaiyan':'azerbaijan','ucrania':'ukraine','polonia':'poland',
-        'rumania':'romania','hungria':'hungary','chequia':'czechia','eslovaquia':'slovakia',
-        'belgica':'belgium','paises bajos':'netherlands','suecia':'sweden',
-        'noruega':'norway','dinamarca':'denmark','finlandia':'finland',
-        'islandia':'iceland','irlanda':'ireland','grecia':'greece',
-        'bulgaria':'bulgaria','croacia':'croatia','letonia':'latvia',
-        'lituania':'lithuania','bielorrusia':'belarus',
+        'azerbaiyan':'azerbaijan','polonia':'poland','chequia':'czechia',
+        'eslovaquia':'slovakia','paises bajos':'netherlands','dinamarca':'denmark',
+        'finlandia':'finland','islandia':'iceland','croacia':'croatia',
+        'letonia':'latvia','lituania':'lithuania','bielorrusia':'belarus',
+        'panama':'panama','republica dominicana':'dominican rep.',
       };
       const normalize = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,' ').replace(/\s+/g,' ').trim();
       const normalizedCounts = {};
@@ -3052,7 +3179,170 @@ async function deleteAuthor(authorId) {
   }
 }
 
-// ===== BULK FILL =====
+// ===== GENRE EDITOR =====
+let _genreQueue = [];
+let _genreCurrent = 0;
+let _genreSavedCount = 0;
+let _genreSelectedValue = '';
+
+// Curated genre list — expand as needed
+const GENRES_LIST = [
+  'Novela','Cuento','Poesía','Teatro','Ensayo','Crónica','Memorias','Autobiografía',
+  'Biografía','Epistolar','Ciencia Ficción','Fantasía','Terror','Thriller','Misterio',
+  'Policial','Romance','Histórica','Aventura','Humor','Sátira','Distopía','Utopía',
+  'Realismo Mágico','Gótica','Psicológica','Filosófica','Política','Social',
+  'Infantil','Juvenil','Gráfica','Divulgación','Historia','Política / Sociedad',
+  'Economía','Psicología','Ciencia','Tecnología','Arte','Gastronomía','Viajes',
+  'Espiritualidad','Autoayuda','Negocios',
+];
+
+function openGenreEditor() {
+  _genreQueue = [...books].sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||'','es'));
+  _genreCurrent = 0;
+  _genreSavedCount = 0;
+  document.getElementById('genre-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  _renderGenreEditor();
+}
+
+function closeGenreEditor() {
+  document.getElementById('genre-modal').style.display = 'none';
+  document.body.style.overflow = '';
+  renderBooks(); renderHome();
+}
+
+function _renderGenreEditor() {
+  const b = _genreQueue[_genreCurrent];
+  if (!b) { _showGenreDone(); return; }
+
+  document.getElementById('genre-editor-body').style.display = 'block';
+  document.getElementById('genre-done').style.display = 'none';
+
+  // Subtitle
+  document.getElementById('genre-modal-subtitle').textContent =
+    `Libro ${_genreCurrent + 1} de ${_genreQueue.length}`;
+
+  // Book card
+  document.getElementById('genre-book-card').innerHTML = `
+    <img src="${b.portada_url||''}" class="w-14 h-20 object-cover rounded-2xl shadow-md flex-shrink-0"
+      onerror="this.src='https://via.placeholder.com/56x80'"/>
+    <div class="min-w-0">
+      <h3 class="font-black text-slate-800 text-lg leading-tight">${b.titulo||''}</h3>
+      <p class="text-orange-500 font-bold text-sm mt-1">${b.Autor||''}</p>
+      ${b.anio_publicacion?`<p class="text-slate-400 font-bold text-xs mt-1">${b.anio_publicacion}</p>`:''}
+    </div>`;
+
+  // Current genre
+  document.getElementById('genre-current').textContent = b.genero_libro || '— sin género —';
+
+  // Genre buttons
+  const existing = [...new Set(books.map(x=>x.genero_libro||'').filter(Boolean))].sort((a,z)=>a.localeCompare(z,'es'));
+  const allGenres = [...new Set([...GENRES_LIST, ...existing])].sort((a,z)=>a.localeCompare(z,'es'));
+  _genreSelectedValue = b.genero_libro || '';
+
+  document.getElementById('genre-btn-grid').innerHTML = allGenres.map(g => {
+    const isActive = g === _genreSelectedValue;
+    return `<button type="button" onclick="selectGenre('${g.replace(/'/g,"\\'")}')"
+      data-genre="${g.replace(/"/g,'&quot;')}"
+      class="genre-pill px-5 py-3 rounded-[20px] font-black text-sm transition-all border-2
+        ${isActive
+          ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-100'
+          : 'bg-white border-slate-100 text-slate-500 hover:border-orange-300 hover:text-orange-600'}">
+      ${g}
+    </button>`;
+  }).join('');
+
+  // Prefill custom input if genre not in list
+  const customInp = document.getElementById('genre-custom-input');
+  customInp.value = (b.genero_libro && !allGenres.includes(b.genero_libro)) ? b.genero_libro : '';
+
+  // Subgenero
+  document.getElementById('genre-subgenero-input').value = b.subgenero_libro || '';
+
+  // Progress
+  const pct = Math.round((_genreCurrent / _genreQueue.length) * 100);
+  document.getElementById('genre-progress-bar').style.width = pct + '%';
+  document.getElementById('genre-progress-label').textContent = `${_genreSavedCount} guardados`;
+  document.getElementById('genre-progress-pct').textContent = pct + '%';
+
+  // Prev button state
+  document.getElementById('genre-prev-btn').disabled = _genreCurrent === 0;
+
+  // Next button label
+  const isLast = _genreCurrent === _genreQueue.length - 1;
+  document.getElementById('genre-next-btn').innerHTML = isLast
+    ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Guardar y finalizar`
+    : `Guardar y siguiente <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>`;
+}
+
+function selectGenre(g) {
+  _genreSelectedValue = g;
+  document.querySelectorAll('.genre-pill').forEach(btn => {
+    const active = btn.dataset.genre === g;
+    btn.className = `genre-pill px-5 py-3 rounded-[20px] font-black text-sm transition-all border-2 ${
+      active ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-100'
+              : 'bg-white border-slate-100 text-slate-500 hover:border-orange-300 hover:text-orange-600'}`;
+  });
+  // Clear custom input if it matches a button
+  const customInp = document.getElementById('genre-custom-input');
+  if (customInp.value === g) customInp.value = '';
+}
+
+function applyGenreFromInput() {
+  const val = document.getElementById('genre-custom-input').value.trim();
+  if (!val) return;
+  _genreSelectedValue = val;
+  // Deselect all buttons
+  document.querySelectorAll('.genre-pill').forEach(btn => {
+    btn.className = 'genre-pill px-5 py-3 rounded-[20px] font-black text-sm transition-all border-2 bg-white border-slate-100 text-slate-500 hover:border-orange-300 hover:text-orange-600';
+  });
+}
+
+async function genreSaveAndNext() {
+  const b = _genreQueue[_genreCurrent];
+  if (!b) return;
+
+  const genre = document.getElementById('genre-custom-input').value.trim() || _genreSelectedValue;
+  const subgenero = document.getElementById('genre-subgenero-input').value.trim();
+
+  if (genre !== b.genero_libro || subgenero !== (b.subgenero_libro||'')) {
+    try {
+      const updates = { genero_libro: genre, subgenero_libro: subgenero };
+      await updateRowById(SHEET_ID_BOOKS, 'libro_id', b.libro_id, updates);
+      const idx = books.findIndex(x => x.libro_id === b.libro_id);
+      if (idx !== -1) books[idx] = processBooks([{ ...books[idx], ...updates }])[0];
+      _genreQueue[_genreCurrent] = { ..._genreQueue[_genreCurrent], ...updates };
+      _genreSavedCount++;
+    } catch(e) {
+      showToast('⚠ Error guardando: ' + e.message, true);
+      return;
+    }
+  }
+
+  _genreCurrent++;
+  if (_genreCurrent >= _genreQueue.length) { _showGenreDone(); return; }
+  _renderGenreEditor();
+}
+
+function genreSkip() {
+  _genreCurrent++;
+  if (_genreCurrent >= _genreQueue.length) { _showGenreDone(); return; }
+  _renderGenreEditor();
+}
+
+function genrePrev() {
+  if (_genreCurrent > 0) { _genreCurrent--; _renderGenreEditor(); }
+}
+
+function _showGenreDone() {
+  document.getElementById('genre-editor-body').style.display = 'none';
+  document.getElementById('genre-done').style.display = 'block';
+  document.getElementById('genre-done-summary').textContent =
+    `${_genreSavedCount} libro${_genreSavedCount !== 1 ? 's' : ''} actualizado${_genreSavedCount !== 1 ? 's' : ''}`;
+  document.getElementById('genre-modal-subtitle').textContent = '¡Completado!';
+}
+
+
 let _bulkPaused = false;
 let _bulkStop = false;
 
