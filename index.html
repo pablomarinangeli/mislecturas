@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r016</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r017</p>
   </div>
 </div>
 
@@ -165,7 +165,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r016</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r017</p>
       </div>
     </div>
   </aside>
@@ -200,8 +200,8 @@
       <div id="stat-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6"></div>
       <div id="fav-sections" class="space-y-20"></div>
       <div id="rank-section" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8"></div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div id="continent-section"></div>
+      <div id="continent-section"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div id="rating-rank-section"></div>
         <div id="year-section"></div>
       </div>
@@ -881,38 +881,97 @@ function renderHome() {
     ${rankHtml('Países Recurrentes', s.rankedCountries, 'bg-indigo-400')}
     ${rankHtml('Géneros Literarios', s.rankedGenres, 'bg-emerald-400')}`;
 
-  // Continent distribution
-  const continentColors = {
-    'América del Sur':'bg-emerald-400','América del Norte':'bg-teal-400','Europa':'bg-indigo-400',
-    'Asia':'bg-amber-400','África':'bg-orange-400','Oceanía':'bg-cyan-400','América Central':'bg-lime-400',
-    'Medio Oriente':'bg-rose-400','América Latina':'bg-green-400'
-  };
-  if (s.rankedContinents.length > 0) {
-    const totalCont = s.rankedContinents.reduce((acc,c)=>acc+c.count,0);
-    const maxCont = s.rankedContinents[0]?.count || 1;
+  // World map — authors by country
+  if (authors.length > 0) {
+    const countryCounts = {};
+    authors.forEach(a => {
+      const c = (a.pais||'').trim();
+      if (c) countryCounts[c] = (countryCounts[c]||0)+1;
+    });
+    const maxCountryCount = Math.max(...Object.values(countryCounts), 1);
+    const continentList = s.rankedContinents.map(c =>
+      `<span onclick="setAuthorFilters({continente:'${c.name}'})"
+        class="cursor-pointer text-[10px] font-black text-slate-500 hover:text-indigo-600 transition-colors px-3 py-1.5 rounded-full bg-slate-50 hover:bg-indigo-50 border border-slate-100 hover:border-indigo-200">
+        ${c.name} <span class="text-slate-300">${c.count}</span>
+      </span>`).join('');
     document.getElementById('continent-section').innerHTML = `
-      <div class="bg-white p-8 rounded-[40px] border border-orange-50 shadow-sm h-full">
-        <div class="flex items-center gap-3 mb-6">
-          <div class="w-9 h-9 rounded-xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-indigo-400">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <div class="bg-white p-10 rounded-[48px] border border-orange-50 shadow-sm">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-white shadow-sm border border-orange-50 flex items-center justify-center text-indigo-400">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </div>
+            <div>
+              <h3 class="text-xl font-black text-slate-800 tracking-tighter uppercase">Autores por País</h3>
+              <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">${Object.keys(countryCounts).length} países · clic para filtrar</p>
+            </div>
           </div>
-          <h3 class="text-[11px] font-black text-slate-500 tracking-[0.15em] uppercase">Autores por Continente</h3>
         </div>
-        <div class="space-y-3">
-          ${s.rankedContinents.map(c => {
-            const pct = Math.round((c.count/maxCont)*100);
-            const pctTotal = ((c.count/totalCont)*100).toFixed(0);
-            const color = continentColors[c.name] || 'bg-slate-400';
-            return `<div class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 px-2 py-1.5 rounded-xl transition-all group" onclick="setAuthorFilters({continente:'${c.name}'})">
-              <span class="text-[11px] font-black text-slate-700 truncate flex-1 group-hover:text-indigo-600">${c.name}</span>
-              <div class="w-24 h-1.5 bg-slate-50 rounded-full overflow-hidden flex-shrink-0">
-                <div class="h-full rounded-full ${color} opacity-70" style="width:${pct}%"></div>
-              </div>
-              <span class="text-[10px] font-bold text-slate-400 w-10 text-right flex-shrink-0">${c.count} <span class="text-slate-200">${pctTotal}%</span></span>
-            </div>`;
-          }).join('')}
+        <div id="world-map-container" style="width:100%;height:320px;position:relative;overflow:hidden;border-radius:24px;background:#f8f9fc;">
+          <div id="world-map-tooltip" style="display:none;position:absolute;pointer-events:none;background:rgba(30,27,50,0.92);color:#fff;font-size:11px;font-weight:700;padding:6px 12px;border-radius:12px;white-space:nowrap;z-index:10;"></div>
         </div>
+        <div class="flex flex-wrap gap-2 mt-6">${continentList}</div>
       </div>`;
+    const _loadScript = src => new Promise((res,rej) => {
+      if (document.querySelector('script[src="'+src+'"]')) { res(); return; }
+      const s = document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej;
+      document.head.appendChild(s);
+    });
+    Promise.all([
+      _loadScript('https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js'),
+      _loadScript('https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js'),
+    ]).then(() => d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')).then(world => {
+      const container = document.getElementById('world-map-container');
+      const tooltip = document.getElementById('world-map-tooltip');
+      if (!container) return;
+      const W = container.offsetWidth || 800, H = 320;
+      const svg = d3.select(container).append('svg')
+        .attr('width','100%').attr('viewBox',`0 0 ${W} ${H}`).style('display','block');
+      const projection = d3.geoNaturalEarth1().scale(W/6.3).translate([W/2,H/2]);
+      const path = d3.geoPath(projection);
+      const colorScale = d3.scaleSequential().domain([0,maxCountryCount]).interpolator(d3.interpolate('#dfe3f5','#3730a3'));
+      const normalize = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z]/g,' ').trim();
+      const normalizedCounts = {};
+      Object.entries(countryCounts).forEach(([p,cnt]) => { normalizedCounts[normalize(p)]=cnt; });
+      svg.append('path').datum(d3.geoGraticule()()).attr('d',path).attr('fill','none').attr('stroke','#e8eaf0').attr('stroke-width',0.3);
+      svg.append('g').selectAll('path')
+        .data(topojson.feature(world,world.objects.countries).features)
+        .join('path')
+        .attr('d',path)
+        .attr('fill',d => { const cnt=normalizedCounts[normalize(d.properties&&d.properties.name||'')]||0; return cnt>0?colorScale(cnt):'#eef0f6'; })
+        .attr('stroke','#fff').attr('stroke-width',0.4)
+        .style('cursor',d => normalizedCounts[normalize(d.properties&&d.properties.name||'')]?'pointer':'default')
+        .on('mousemove',function(event,d) {
+          const name=normalize(d.properties&&d.properties.name||'');
+          const cnt=normalizedCounts[name]||0;
+          if(!cnt){tooltip.style.display='none';return;}
+          const rect=container.getBoundingClientRect();
+          tooltip.style.display='block';
+          tooltip.style.left=(event.clientX-rect.left+14)+'px';
+          tooltip.style.top=(event.clientY-rect.top-38)+'px';
+          tooltip.textContent=(d.properties&&d.properties.name||'')+' · '+cnt+' autor'+(cnt>1?'es':'');
+          d3.select(this).attr('stroke','#4338ca').attr('stroke-width',1.5);
+        })
+        .on('mouseleave',function(e,d){
+          tooltip.style.display='none';
+          d3.select(this).attr('stroke','#fff').attr('stroke-width',0.4);
+        })
+        .on('click',function(e,d){
+          const orig=Object.keys(countryCounts).find(p=>normalize(p)===normalize(d.properties&&d.properties.name||''));
+          if(orig) setAuthorFilters({pais:orig});
+        });
+      const lx=W-160,ly=H-22;
+      const defs=svg.append('defs');
+      const grad=defs.append('linearGradient').attr('id','map-grad-wm').attr('x1','0%').attr('x2','100%');
+      grad.append('stop').attr('offset','0%').attr('stop-color','#dfe3f5');
+      grad.append('stop').attr('offset','100%').attr('stop-color','#3730a3');
+      svg.append('rect').attr('x',lx).attr('y',ly).attr('width',140).attr('height',7).attr('rx',3).attr('fill','url(#map-grad-wm)');
+      svg.append('text').attr('x',lx).attr('y',ly-4).attr('font-size',9).attr('font-weight',700).attr('fill','#94a3b8').text('0');
+      svg.append('text').attr('x',lx+140).attr('y',ly-4).attr('font-size',9).attr('font-weight',700).attr('fill','#94a3b8').attr('text-anchor','end').text(maxCountryCount);
+    }).catch(()=>{
+      const c=document.getElementById('world-map-container');
+      if(c)c.innerHTML='<p style="color:#94a3b8;text-align:center;padding:40px;font-weight:700;font-size:13px">No se pudo cargar el mapa</p>';
+    });
   }
 
   // Rating distribution — compact
@@ -2639,19 +2698,40 @@ function openEditBook(bookId) {
     {key:'google_books_id',label:'Google Books ID'},
   ];
 
+  // Build genre lists from existing books data
+  const existingGenres = [...new Set(books.map(b2=>b2.genero_libro||'').filter(Boolean))].sort((a,z)=>a.localeCompare(z,'es'));
+  const existingSubgenres = [...new Set(books.map(b2=>b2.subgenero_libro||'').filter(Boolean))].sort((a,z)=>a.localeCompare(z,'es'));
+
   const row = (f) => {
     const val = String(b[f.key] || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     const isEmpty = !b[f.key];
-    const inputEl = f.textarea
-      ? `<textarea name="${f.key}" rows="3" class="flex-1 px-4 py-2.5 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none resize-none transition-all">${val}</textarea>`
-      : `<input type="text" name="${f.key}" value="${val}" class="flex-1 px-4 py-2.5 rounded-[16px] border-2 ${isEmpty?'border-dashed border-orange-200 bg-orange-50/30':'border-orange-100'} focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>`;
+
+    let inputEl;
+    if (f.key === 'genero_libro') {
+      inputEl = `<select name="${f.key}"
+        class="flex-1 px-4 py-2.5 rounded-[16px] border-2 ${isEmpty?'border-dashed border-orange-200 bg-orange-50/30':'border-orange-100'} focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all bg-white">
+        <option value="">-- Sin género --</option>
+        ${existingGenres.map(g=>`<option value="${g}" ${g===b[f.key]?'selected':''}>${g}</option>`).join('')}
+      </select>`;
+    } else if (f.key === 'subgenero_libro') {
+      inputEl = `<select name="${f.key}"
+        class="flex-1 px-4 py-2.5 rounded-[16px] border-2 ${isEmpty?'border-dashed border-orange-200 bg-orange-50/30':'border-orange-100'} focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all bg-white">
+        <option value="">-- Sin subgénero --</option>
+        ${existingSubgenres.map(g=>`<option value="${g}" ${g===b[f.key]?'selected':''}>${g}</option>`).join('')}
+      </select>`;
+    } else if (f.textarea) {
+      inputEl = `<textarea name="${f.key}" rows="3" class="flex-1 px-4 py-2.5 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none resize-none transition-all">${val}</textarea>`;
+    } else {
+      inputEl = `<input type="text" name="${f.key}" value="${val}" class="flex-1 px-4 py-2.5 rounded-[16px] border-2 ${isEmpty?'border-dashed border-orange-200 bg-orange-50/30':'border-orange-100'} focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>`;
+    }
+
     return `<div class="flex items-start gap-2">
       <div class="flex flex-col flex-1 gap-1">
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${f.label}${isEmpty?` <span class="text-orange-400">· vacío</span>`:''}</label>
         <div class="flex gap-2">
           ${inputEl}
           <button type="button" onclick="refreshBookField('${bookId}','${f.key}')" title="Buscar en APIs"
-            class="flex-shrink-0 w-9 h-9 mt-0.5 rounded-[12px] bg-slate-100 hover:bg-orange-500 text-slate-400 hover:text-white transition-all flex items-center justify-center" title="Buscar este campo en APIs">
+            class="flex-shrink-0 w-9 h-9 mt-0.5 rounded-[12px] bg-slate-100 hover:bg-orange-500 text-slate-400 hover:text-white transition-all flex items-center justify-center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </button>
         </div>
@@ -2691,7 +2771,7 @@ async function saveEditBook(bookId) {
   if (idx === -1) return;
   const form = document.getElementById('edit-book-form');
   const fields = {};
-  form.querySelectorAll('input,textarea').forEach(el => { if (el.name) fields[el.name] = el.value; });
+  form.querySelectorAll('input,textarea,select').forEach(el => { if (el.name) fields[el.name] = el.value; });
   showDrawerLoading('Guardando en Google Drive...');
   try {
     await updateRowById(SHEET_ID_BOOKS, 'libro_id', bookId, fields);
