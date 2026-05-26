@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r025</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r027</p>
   </div>
 </div>
 
@@ -169,7 +169,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r025</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r027</p>
       </div>
     </div>
   </aside>
@@ -1258,7 +1258,7 @@ function getFilteredBooks() {
     const my = selectedYears.size===0||selectedYears.has(String(b.Anio_lectura||'').trim());
     const mr = ratingFilter.size===0||ratingFilter.has(b.rating||0);
     const mg = !generoFilter || (b.genero_libro||'').toLowerCase() === generoFilter.toLowerCase();
-    const msg = !subgeneroFilter || (b.subgenero_libro||'').toLowerCase() === subgeneroFilter.toLowerCase();
+    const msg = !subgeneroFilter || (b.subgenero||'').toLowerCase() === subgeneroFilter.toLowerCase();
     return ms&&mf&&my&&mr&&mg&&msg;
   }).sort((a,b)=>(a.titulo||'').localeCompare(b.titulo||'','es',{sensitivity:'base'}));
 }
@@ -1279,7 +1279,7 @@ function populateSubgeneroSelect() {
   const filtered = generoFilter
     ? books.filter(b=>b.genero_libro===generoFilter)
     : books;
-  const subgeneros = [...new Set(filtered.map(b=>b.subgenero_libro||'').filter(Boolean))].sort();
+  const subgeneros = [...new Set(filtered.map(b=>b.subgenero||'').filter(Boolean))].sort();
   const cur = subgeneroFilter;
   sel.innerHTML = '<option value="">Todos los subgéneros</option>' +
     subgeneros.map(sg=>`<option value="${sg}" ${sg===cur?'selected':''}>${sg}</option>`).join('');
@@ -1351,7 +1351,7 @@ function renderBooks() {
       <div class="flex-1 min-w-0">
         <h4 class="font-black text-slate-800 truncate text-xl">${b.titulo||''}</h4>
         <p class="text-xs font-bold text-orange-500 uppercase tracking-[0.2em]">${b.Autor||''}</p>
-        ${(b.genero_libro||b.subgenero_libro)?`<p class="text-[10px] font-bold text-slate-300 mt-1">${[b.genero_libro,b.subgenero_libro].filter(Boolean).join(' · ')}</p>`:''}
+        ${(b.genero_libro||b.subgenero)?`<p class="text-[10px] font-bold text-slate-300 mt-1">${[b.genero_libro,b.subgenero].filter(Boolean).join(' · ')}</p>`:''}
       </div>
       <div class="hidden md:flex flex-col items-end min-w-[120px]">
         <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1">Lectura</span>
@@ -1631,7 +1631,7 @@ function _renderModal() {
 
   let detail='';
   if (type==='book') {
-    const subgenero=si.subgenero_libro||si.subgenero||si.Subgenero||si.sub_genero||'';
+    const subgenero=si.subgenero||si.subgenero||si.Subgenero||si.sub_genero||'';
     const isbn=si.ISBN||si.isbn||si.isbn_13||si.isbn13||'';
     detail=`<div class="space-y-16">
       <div class="space-y-4">
@@ -2056,7 +2056,7 @@ function renderStep2() {
     <form id="add-book-form" class="space-y-5" onsubmit="return false">
       <div class="grid grid-cols-2 gap-4">${fieldRow('Título','titulo',true)}${fieldRow('Autor','Autor',true)}</div>
       <div class="grid grid-cols-3 gap-4">${fieldRow('Año publicación','anio_publicacion',true)}${fieldRow('Idioma original','idioma_original',true)}${fieldRow('ISBN','ISBN',true)}</div>
-      <div class="grid grid-cols-2 gap-4">${fieldRow('Género','genero_libro',true)}${fieldRow('Subgénero','subgenero_libro',false)}</div>
+      <div class="grid grid-cols-2 gap-4">${fieldRow('Género','genero_libro',true)}${fieldRow('Subgénero','subgenero',false)}</div>
       ${fieldRow('URL portada','portada_url',true)}
       <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Sinopsis <span class="text-orange-400">· editable</span></label>
         <textarea name="resumen" rows="4" class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none resize-none">${d.resumen||''}</textarea></div>
@@ -2138,7 +2138,7 @@ async function submitAddBook() {
   data.google_books_id  = isGoogle && src._raw_id ? src._raw_id : '';
   data.fuente_resumen   = data.resumen ? srcLabel : '';
   data.fuente_genero    = data.genero_libro ? srcLabel : '';
-  data.fuente_subgenero = data.subgenero_libro ? 'Manual' : '';
+  data.fuente_subgenero = data.subgenero ? 'Manual' : '';
   data.fuente_temas     = '';
   data.fuente_isbn      = data.isbn ? srcLabel : '';
   data.temas_clave      = src.temas_clave || '';
@@ -2854,7 +2854,7 @@ function openEditBook(bookId) {
     {key:'isbn',          label:'ISBN (alternativo)'},
     {key:'editorial',     label:'Editorial'},
     {key:'genero_libro',  label:'Género'},
-    {key:'subgenero_libro',label:'Subgénero'},
+    {key:'subgenero',label:'Subgénero'},
     {key:'temas_clave',   label:'Temas clave'},
     {key:'portada_url',   label:'URL portada'},
     {key:'resumen',       label:'Sinopsis', textarea:true},
@@ -3221,7 +3221,7 @@ function openQuickGenreEdit(bookId) {
       </div>
       <div>
         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Subgénero</p>
-        <input id="qge-subgenero" type="text" value="${(b.subgenero_libro||'').replace(/"/g,'&quot;')}"
+        <input id="qge-subgenero" type="text" value="${(b.subgenero||'').replace(/"/g,'&quot;')}"
           placeholder="Subgénero (opcional)..."
           class="w-full px-4 py-2.5 rounded-[16px] border-2 border-orange-100 focus:border-emerald-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
       </div>
@@ -3236,24 +3236,24 @@ function openQuickGenreEdit(bookId) {
 
 function qgeSelect(btn, genre) {
   document.querySelectorAll('.qge-pill').forEach(b => {
-    b.className = 'qge-pill px-4 py-2.5 rounded-[18px] font-black text-sm transition-all border-2 bg-white border-slate-100 text-slate-500 hover:border-emerald-300 hover:text-emerald-600';
+    b.className = 'qge-pill w-full py-4 rounded-[18px] font-black text-sm transition-all border-2 bg-white border-slate-100 text-slate-500 hover:border-emerald-300 hover:text-emerald-600';
   });
-  btn.className = 'qge-pill px-4 py-2.5 rounded-[18px] font-black text-sm transition-all border-2 bg-emerald-500 text-white border-emerald-500 shadow-md';
-  btn._qgeGenre = genre;
+  btn.className = 'qge-pill w-full py-4 rounded-[18px] font-black text-sm transition-all border-2 bg-emerald-500 text-white border-emerald-500 shadow-md';
+  // genre is already stored in data-genre attribute set during render
 }
 
 async function saveQuickGenre(bookId) {
   const idx = books.findIndex(b => b.libro_id === bookId);
   if (idx === -1) return;
+  // Read selected genre from data-selected attribute set by qgeSelect, fallback to active pill dataset
   const activeBtn = document.querySelector('.qge-pill.bg-emerald-500');
-  const genre = activeBtn ? (activeBtn._qgeGenre || activeBtn.dataset.genre) : '';
+  const genre = activeBtn ? activeBtn.dataset.genre : '';
   const subgenero = document.getElementById('qge-subgenero')?.value.trim() || '';
   closeStatusModal();
   try {
-    const updates = { genero_libro: genre, subgenero_libro: subgenero };
+    const updates = { genero_libro: genre, subgenero: subgenero };
     await updateRowById(SHEET_ID_BOOKS, 'libro_id', bookId, updates);
     books[idx] = processBooks([{ ...books[idx], ...updates }])[0];
-    // Re-render modal in place
     selectedItem = books[idx];
     _renderModal();
     renderBooks(); renderHome();
@@ -3340,7 +3340,7 @@ function _renderGenreEditor() {
   customInp.value = (b.genero_libro && !libGenres.includes(b.genero_libro)) ? b.genero_libro : '';
 
   // Subgenero
-  document.getElementById('genre-subgenero-input').value = b.subgenero_libro || '';
+  document.getElementById('genre-subgenero-input').value = b.subgenero || '';
 
   // Progress
   const pct = Math.round((_genreCurrent / _genreQueue.length) * 100);
@@ -3388,9 +3388,9 @@ async function genreSaveAndNext() {
   const genre = document.getElementById('genre-custom-input').value.trim() || _genreSelectedValue;
   const subgenero = document.getElementById('genre-subgenero-input').value.trim();
 
-  if (genre !== b.genero_libro || subgenero !== (b.subgenero_libro||'')) {
+  if (genre !== b.genero_libro || subgenero !== (b.subgenero||'')) {
     try {
-      const updates = { genero_libro: genre, subgenero_libro: subgenero };
+      const updates = { genero_libro: genre, subgenero: subgenero };
       await updateRowById(SHEET_ID_BOOKS, 'libro_id', b.libro_id, updates);
       const idx = books.findIndex(x => x.libro_id === b.libro_id);
       if (idx !== -1) books[idx] = processBooks([{ ...books[idx], ...updates }])[0];
@@ -3604,6 +3604,8 @@ async function startBulkFill() {
 
 async function toggleAuthorFavorite(authorId) {
   const idx = authors.findIndex(a => a.autor_id === authorId);
+  if (idx === -1) return;
+  const newFav = !authors[idx].favorite;
   const newFavStr = newFav ? 'Sí' : 'No';
   try {
     await updateRowById(SHEET_ID_AUTHORS, 'autor_id', authorId, { Es_Favorito: newFavStr });
