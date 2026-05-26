@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r029</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r030</p>
   </div>
 </div>
 
@@ -169,7 +169,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r029</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r030</p>
       </div>
     </div>
   </aside>
@@ -1654,7 +1654,7 @@ function _renderModal() {
     detail=`<div class="space-y-16">
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-5">${modernInfoBoxTooltip('Género',si.genero_libro,icons.hash)}${modernInfoBoxTooltip('Subgénero',subgenero,icons.layers)}</div>
-        <div class="grid grid-cols-3 gap-5">${modernInfoBoxTooltip('Publicación',si.anio_publicacion,icons.calendar)}${modernInfoBoxTooltip('Idioma Original',si.idioma_original,icons.msgSquare)}${modernInfoBoxTooltip('ISBN',isbn,icons.barcode)}</div>
+        <div class="grid grid-cols-3 gap-5">${modernInfoBoxTooltip('Publicación',si.anio_publicacion,icons.calendar)}${modernInfoBoxTooltip('Idioma',si.idioma,icons.msgSquare)}${modernInfoBoxTooltip('ISBN',isbn,icons.barcode)}</div>
       </div>
       <section class="bg-orange-50/40 -mx-10 md:-mx-16 p-10 md:p-16 space-y-10">
         <h4 class="text-[11px] font-black text-slate-300 uppercase tracking-[0.4em] mb-10 flex items-center gap-4"><span class="w-8 h-1 bg-orange-100 rounded-full"></span>Mi Experiencia de Lectura</h4>
@@ -1991,7 +1991,7 @@ async function searchGoogleBooks(q) {
         titulo: info.title || '',
         Autor: (info.authors||[]).join(', '),
         anio_publicacion: (info.publishedDate||'').substring(0,4),
-        idioma_original: info.language || '',
+        idioma: info.language || '',
         genero_libro: (info.categories||[]).join(', '),
         resumen: (info.description||'').replace(/<[^>]+>/g,''),
         portada_url: (info.imageLinks?.thumbnail||info.imageLinks?.smallThumbnail||'').replace('http://','https://'),
@@ -2017,7 +2017,7 @@ async function searchOpenLibrary(q) {
         titulo: doc.title || '',
         Autor: (doc.author_name||[]).slice(0,2).join(', '),
         anio_publicacion: String(doc.first_publish_year||''),
-        idioma_original: (doc.language||[])[0] || '',
+        idioma: (doc.language||[])[0] || '',
         genero_libro: (doc.subject||[]).slice(0,2).join(', '),
         temas_clave: (doc.subject||[]).slice(0,5).join(', '),
         resumen: '',
@@ -2073,7 +2073,7 @@ function renderStep2() {
     </div>
     <form id="add-book-form" class="space-y-5" onsubmit="return false">
       <div class="grid grid-cols-2 gap-4">${fieldRow('Título','titulo',true)}${fieldRow('Autor','Autor',true)}</div>
-      <div class="grid grid-cols-3 gap-4">${fieldRow('Año publicación','anio_publicacion',true)}${fieldRow('Idioma original','idioma_original',true)}${fieldRow('ISBN','ISBN',true)}</div>
+      <div class="grid grid-cols-3 gap-4">${fieldRow('Año publicación','anio_publicacion',true)}${fieldRow('Idioma','idioma',true)}${fieldRow('ISBN','ISBN',true)}</div>
       <div class="grid grid-cols-2 gap-4">${fieldRow('Género','genero_libro',true)}${fieldRow('Subgénero','subgenero',false)}</div>
       ${fieldRow('URL portada','portada_url',true)}
       <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Sinopsis <span class="text-orange-400">· editable</span></label>
@@ -2151,7 +2151,7 @@ async function submitAddBook() {
   data.libro_id         = getNextId('book');
   data.Estado           = addBookState.estado;
   data.isbn             = data.ISBN || src.ISBN || '';
-  data.idioma           = data.idioma_original || src.idioma_original || '';
+  data.idioma = src.idioma || '';
   data.editorial        = src.editorial || '';
   data.google_books_id  = isGoogle && src._raw_id ? src._raw_id : '';
   data.fuente_resumen   = data.resumen ? srcLabel : '';
@@ -2866,7 +2866,6 @@ function openEditBook(bookId) {
     {key:'titulo',        label:'Título'},
     {key:'Autor',         label:'Autor'},
     {key:'anio_publicacion', label:'Año publicación'},
-    {key:'idioma_original',  label:'Idioma original'},
     {key:'idioma',           label:'Idioma'},
     {key:'ISBN',          label:'ISBN'},
     {key:'isbn',          label:'ISBN (alternativo)'},
@@ -3041,7 +3040,7 @@ async function fetchBookFromGoogleBooks(titulo, autor) {
     const isbn13 = (info.industryIdentifiers||[]).find(x=>x.type==='ISBN_13');
     const isbn10 = (info.industryIdentifiers||[]).find(x=>x.type==='ISBN_10');
     return { _id: item.id, titulo: info.title, Autor:(info.authors||[]).join(', '),
-      anio_publicacion:(info.publishedDate||'').substring(0,4), idioma_original:info.language,
+      anio_publicacion:(info.publishedDate||'').substring(0,4), idioma:info.language,
       genero_libro:(info.categories||[]).join(', '), resumen:(info.description||'').replace(/<[^>]+>/g,''),
       portada_url:(info.imageLinks?.thumbnail||'').replace('http://','https://'),
       editorial:info.publisher, ISBN:isbn13?.identifier||isbn10?.identifier||'' };
@@ -3057,7 +3056,7 @@ async function fetchBookFromOpenLibrary(titulo, autor) {
     if (!doc) return null;
     const cover = doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : '';
     return { titulo:doc.title, Autor:(doc.author_name||[]).join(', '),
-      anio_publicacion:String(doc.first_publish_year||''), idioma_original:(doc.language||[])[0]||'',
+      anio_publicacion:String(doc.first_publish_year||''), idioma:(doc.language||[])[0]||'',
       genero_libro:(doc.subject||[]).slice(0,2).join(', '), temas_clave:(doc.subject||[]).slice(0,5).join(', '),
       portada_url:cover, ISBN:(doc.isbn||[])[0]||'', editorial:(doc.publisher||[])[0]||'' };
   } catch(e) { return null; }
@@ -3069,8 +3068,7 @@ function buildBookFieldMap(gb, ol, wd) {
     titulo:             gb?.titulo || ol?.titulo || '',
     Autor:              gb?.Autor || ol?.Autor || '',
     anio_publicacion:   gb?.anio_publicacion || ol?.anio_publicacion || '',
-    idioma_original:    gb?.idioma_original || ol?.idioma_original || '',
-    idioma:             gb?.idioma_original || ol?.idioma_original || '',
+    idioma:             gb?.idioma || ol?.idioma || '',
     ISBN:               gb?.ISBN || ol?.ISBN || '',
     isbn:               gb?.ISBN || ol?.ISBN || '',
     editorial:          gb?.editorial || ol?.editorial || '',
@@ -3539,7 +3537,7 @@ async function startBulkFill() {
         const fm = buildBookFieldMap(gbData, olData, wdData);
         const updates = {};
         const bookFields = ['resumen','genero_libro','temas_clave','ISBN','isbn','editorial',
-          'idioma_original','idioma','anio_publicacion','portada_url','google_books_id',
+          'idioma','anio_publicacion','portada_url','google_books_id',
           'wikidata_id','wikipedia_url_libro','fuente_resumen','fuente_genero','fuente_isbn'];
 
         bookFields.forEach(key => {
