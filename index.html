@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r027</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r029</p>
   </div>
 </div>
 
@@ -169,7 +169,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r027</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r029</p>
       </div>
     </div>
   </aside>
@@ -484,6 +484,23 @@ const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
 // ===== STATE =====
 let books = [], authors = [], activeTab = 'home', viewMode = 'grid';
+let masterGenres = []; // loaded from "generos" sheet tab
+
+async function fetchGenresSheet() {
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID_BOOKS}/values/generos!A1:A1000`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${googleAccessToken}` } });
+    if (!res.ok) return;
+    const json = await res.json();
+    const rows = json.values || [];
+    // First row is header "Genero", rest are values
+    masterGenres = rows.slice(1).map(r => (r[0]||'').trim()).filter(Boolean).sort((a,z) => a.localeCompare(z,'es'));
+    console.log(`Loaded ${masterGenres.length} genres from sheet`);
+  } catch(e) {
+    console.warn('Could not load genres sheet:', e);
+    masterGenres = [];
+  }
+}
 let searchTerm = '', bookFilter = 'todos', selectedYears = new Set();
 let selectedItem = null, modalType = null, modalHistory = [];
 let googleAccessToken = null, dataSource = 'manual';
@@ -592,11 +609,11 @@ async function loadFromGoogleSheets() {
     document.getElementById('loading-msg').textContent = 'Cargando libros desde Google Drive...';
     const booksData = await fetchSheet(SHEET_ID_BOOKS);
     books = processBooks(booksData);
-    // Diagnostic: log first 3 books estado values to console
     console.log('Estado sample:', books.slice(0,3).map(b=>({id:b.libro_id, raw: booksData[0] ? Object.keys(booksData[0]).find(k=>k.toLowerCase()==='estado') : '?', estado:b.estado})));
     document.getElementById('loading-msg').textContent = 'Cargando autores desde Google Drive...';
     const authorsData = await fetchSheet(SHEET_ID_AUTHORS);
     authors = processAuthors(authorsData);
+    await fetchGenresSheet();
     startApp(true);
   } catch(err) {
     console.error('Sheets error:', err);
@@ -631,6 +648,7 @@ async function syncFromDrive() {
   try {
     const [bd, ad] = await Promise.all([fetchSheet(SHEET_ID_BOOKS), fetchSheet(SHEET_ID_AUTHORS)]);
     books = processBooks(bd); authors = processAuthors(ad);
+    await fetchGenresSheet();
     renderHome();
     if (activeTab === 'books') { renderBooks(); populateGeneroSelect(); populateSubgeneroSelect(); }
     if (activeTab === 'authors') renderAuthors();
@@ -2863,8 +2881,8 @@ function openEditBook(bookId) {
     {key:'google_books_id',label:'Google Books ID'},
   ];
 
-  // Build genre list from existing library books only
-  const existingGenres = [...new Set(books.map(b2=>b2.genero_libro||'').filter(Boolean))].sort((a,z)=>a.localeCompare(z,'es'));
+  // Build genre list from master sheet, fallback to library genres
+  const existingGenres = getGenreList();
 
   const row = (f) => {
     const val = String(b[f.key] || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
@@ -3192,12 +3210,18 @@ async function deleteAuthor(authorId) {
   }
 }
 
+// Returns the master genre list from sheet, fallback to library genres
+function getGenreList() {
+  if (masterGenres.length > 0) return masterGenres;
+  return [...new Set(books.map(b => b.genero_libro||'').filter(Boolean))].sort((a,z) => a.localeCompare(z,'es'));
+}
+
 function openQuickGenreEdit(bookId) {
   const b = books.find(x => x.libro_id === bookId);
   if (!b) return;
 
-  // Only genres that actually exist in the library, sorted
-  const libGenres = [...new Set(books.map(x => x.genero_libro||'').filter(Boolean))].sort((a,z) => a.localeCompare(z,'es'));
+  // Use master genre list from sheet, fallback to library genres
+  const libGenres = getGenreList();
 
   const btnHtml = libGenres.map(g => {
     const active = g === (b.genero_libro||'');
@@ -3319,8 +3343,8 @@ function _renderGenreEditor() {
   // Current genre
   document.getElementById('genre-current').textContent = b.genero_libro || '— sin género —';
 
-  // Genre buttons — library genres only, uniform grid
-  const libGenres = [...new Set(books.map(x=>x.genero_libro||'').filter(Boolean))].sort((a,z)=>a.localeCompare(z,'es'));
+  // Genre buttons — master sheet genres, fallback to library genres, uniform grid
+  const libGenres = getGenreList();
   _genreSelectedValue = b.genero_libro || '';
 
   document.getElementById('genre-btn-grid').innerHTML = libGenres.map(g => {
@@ -3610,10 +3634,10 @@ async function toggleAuthorFavorite(authorId) {
   try {
     await updateRowById(SHEET_ID_AUTHORS, 'autor_id', authorId, { Es_Favorito: newFavStr });
     authors[idx] = processAuthors([{ ...authors[idx], Es_Favorito: newFavStr }])[0];
-    // Re-render modal in place to reflect new state
+    selectedItem = authors[idx];
     _renderModal();
     renderHome();
-    if (activeTab === 'authors') renderAuthors();
+    renderAuthors();
     showToast(newFav ? '❤ Marcado como favorito' : 'Removido de favoritos');
   } catch(err) {
     console.error(err);
