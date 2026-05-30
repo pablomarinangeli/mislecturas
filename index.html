@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r030</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026.04.11-r031</p>
   </div>
 </div>
 
@@ -156,10 +156,6 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         Completar datos masivo
       </button>
-      <button id="btn-genre-editor" onclick="openGenreEditor()" style="display:none" class="items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-emerald-500 transition-all">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-        Editor de géneros
-      </button>
       <button id="btn-signout" onclick="signOut()" class="items-center gap-3 text-slate-300 font-black text-[10px] uppercase tracking-[0.2em] hover:text-rose-500 transition-all">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Cerrar sesión
@@ -169,7 +165,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r030</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026.04.11-r031</p>
       </div>
     </div>
   </aside>
@@ -1739,7 +1735,6 @@ function _renderModal() {
         ${wikipediaBtn(si.titulo||si.nombre||'')}
         ${modalType==='book'&&dataSource==='google'&&(si.estado==='Deseado'||si.estado==='Pendiente')?`<button onclick="openStatusModal('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Cambiar estado</button>`:''}
         ${modalType==='book'&&dataSource==='google'&&si.estado==='Leido'?`<button onclick="openEditExperience('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-orange-100 hover:bg-orange-500 text-orange-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-orange-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar lectura</button>`:''}
-        ${modalType==='book'&&dataSource==='google'?`<button onclick="openQuickGenreEdit('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-emerald-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>Editar género</button>`:''}
         ${modalType==='book'&&dataSource==='google'?`<button onclick="closeModal();openEditBook('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-slate-100 hover:bg-orange-500 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar libro</button>`:''}
         ${modalType==='book'&&dataSource==='google'?`<button onclick="confirmDeleteBook('${si.libro_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-white text-rose-400 border border-rose-200 hover:bg-rose-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>Eliminar</button>`:''}
         ${modalType==='author'&&dataSource==='google'?`<button onclick="closeModal();openEditAuthor('${si.autor_id}')" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-[20px] bg-slate-100 hover:bg-orange-500 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-slate-200 hover:border-transparent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editar autor</button>`:''}
@@ -2632,10 +2627,21 @@ function openEditExperience(bookId) {
   const curFav = book.favorite || false;
   _expFav = curFav; _expRating = curRating;
 
+  const genreList = getGenreList();
+  const genreBtns = genreList.map(g => {
+    const active = g === (book.genero_libro||'');
+    return `<button type="button" onclick="expSelectGenre(this)"
+      data-genre="${g.replace(/"/g,'&quot;')}"
+      class="exp-genre-pill w-full py-3 rounded-[16px] font-black text-sm transition-all border-2
+        ${active ? 'bg-orange-500 text-white border-orange-500 shadow-md' : 'bg-white border-slate-100 text-slate-500 hover:border-orange-300 hover:text-orange-500'}">
+      ${g}
+    </button>`;
+  }).join('');
+
   openDrawer(`<div class="p-10 space-y-8">
     <div class="flex items-center justify-between">
       <div>
-        <p class="text-orange-500 font-black text-[10px] uppercase tracking-widest mb-1">Editar experiencia</p>
+        <p class="text-orange-500 font-black text-[10px] uppercase tracking-widest mb-1">Editar lectura</p>
         <h2 class="text-2xl font-black text-slate-800 tracking-tighter leading-tight">${book.titulo||''}</h2>
         <p class="text-orange-400 font-bold text-sm mt-1">${book.Autor||''}</p>
       </div>
@@ -2644,6 +2650,7 @@ function openEditExperience(bookId) {
       </button>
     </div>
     <form id="exp-form" class="space-y-6" onsubmit="return false">
+      <!-- Fecha -->
       <div class="grid grid-cols-2 gap-4">
         <div><label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Mes lectura</label>
           <select name="Mes_Lectura" class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none">
@@ -2654,6 +2661,7 @@ function openEditExperience(bookId) {
           <input type="number" name="Anio_lectura" min="1900" max="2099" value="${book.Anio_lectura||new Date().getFullYear()}"
             class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400"/></div>
       </div>
+      <!-- Calificacion -->
       <div>
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Calificación</label>
         <div class="flex gap-2" id="exp-star-rating">
@@ -2663,6 +2671,7 @@ function openEditExperience(bookId) {
         </div>
         <input type="hidden" name="Mi_Calificacion" id="exp-rating-value" value="${curRating}"/>
       </div>
+      <!-- Favorito -->
       <div class="flex items-center gap-4">
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">¿Favorito?</label>
         <button type="button" id="exp-fav-btn" onclick="toggleExpFav()"
@@ -2671,6 +2680,19 @@ function openEditExperience(bookId) {
         </button>
         <input type="hidden" name="Es_Favorito" id="exp-fav-value" value="${curFav?'Sí':'No'}"/>
       </div>
+      <!-- Genero -->
+      <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-3">Género <span class="text-slate-300 normal-case font-bold">— actual: ${book.genero_libro||'—'}</span></label>
+        <div class="grid grid-cols-2 gap-2">${genreBtns}</div>
+        <input type="hidden" name="genero_libro" id="exp-genre-value" value="${book.genero_libro||''}"/>
+      </div>
+      <!-- Notas Genero (subgenero) -->
+      <div>
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas Género</label>
+        <input type="text" name="subgenero" value="${(book.subgenero||'').replace(/"/g,'&quot;')}" placeholder="Subgénero, aclaración, etc."
+          class="w-full px-5 py-3 rounded-[18px] border-2 border-orange-100 font-bold text-sm text-slate-700 outline-none focus:border-orange-400 transition-all"/>
+      </div>
+      <!-- Notas personales -->
       <div>
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Notas personales</label>
         <textarea name="Mis_notas" rows="4" placeholder="Tus reflexiones..."
@@ -2682,6 +2704,14 @@ function openEditExperience(bookId) {
       </button>
     </form>
   </div>`);
+}
+
+function expSelectGenre(btn) {
+  document.querySelectorAll('.exp-genre-pill').forEach(b => {
+    b.className = 'exp-genre-pill w-full py-3 rounded-[16px] font-black text-sm transition-all border-2 bg-white border-slate-100 text-slate-500 hover:border-orange-300 hover:text-orange-500';
+  });
+  btn.className = 'exp-genre-pill w-full py-3 rounded-[16px] font-black text-sm transition-all border-2 bg-orange-500 text-white border-orange-500 shadow-md';
+  document.getElementById('exp-genre-value').value = btn.dataset.genre;
 }
 
 function setExpRating(n) {
@@ -2698,6 +2728,9 @@ async function submitReadingExp(bookId) {
   const form=document.getElementById('exp-form');
   const data={};form.querySelectorAll('input,textarea,select').forEach(el=>{if(el.name)data[el.name]=el.value;});
   data.Mi_Calificacion=_expRating||0;data.Es_Favorito=_expFav?'Sí':'No';
+  // genre from hidden field (set by expSelectGenre)
+  const genreVal = document.getElementById('exp-genre-value')?.value;
+  if (genreVal !== undefined) data.genero_libro = genreVal;
   await saveStatusChange(bookId,'Leido',data);
 }
 // ===== EDIT AUTHOR =====
