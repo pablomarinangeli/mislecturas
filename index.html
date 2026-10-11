@@ -111,7 +111,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026-10-11-r010</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026-10-11-r011</p>
   </div>
 </div>
 
@@ -194,7 +194,7 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026-10-11-r010</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026-10-11-r011</p>
       </div>
     </div>
   </aside>
@@ -906,83 +906,29 @@ async function loadProfilePhotoFromDrive() {
   } catch(e) { console.warn('loadProfilePhotoFromDrive:', e); }
 }
 
-async function uploadBase64ToDrive(dataUrl) {
-  // Upload a base64 data URL as a file to Google Drive, return the public URL
-  if (!googleAccessToken) return null;
-  await ensureFreshToken();
-  try {
-    // Parse data URL: data:<mime>;base64,<data>
-    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
-    if (!match) return null;
-    const mime = match[1];
-    const b64 = match[2];
-    // Convert base64 to binary
-    const binary = atob(b64);
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const blob = new Blob([bytes], { type: mime });
-    const ext = mime.split('/')[1] || 'jpg';
-    const filename = `bitacora_profile_photo.${ext}`;
-    // Use multipart upload to Drive
-    const boundary = '-------bitacora_boundary';
-    const delimiter = '\r\n--' + boundary + '\r\n';
-    const closeDelimiter = '\r\n--' + boundary + '--';
-    const metadata = JSON.stringify({ name: filename, mimeType: mime });
-    // Build multipart body
-    const metaPart = delimiter + 'Content-Type: application/json\r\n\r\n' + metadata;
-    const metaBytes = new TextEncoder().encode(metaPart);
-    const dataDelimBytes = new TextEncoder().encode('\r\n--' + boundary + '\r\nContent-Type: ' + mime + '\r\n\r\n');
-    const closeBytes = new TextEncoder().encode(closeDelimiter);
-    const body = new Uint8Array(metaBytes.length + dataDelimBytes.length + bytes.length + closeBytes.length);
-    let offset = 0;
-    body.set(metaBytes, offset); offset += metaBytes.length;
-    body.set(dataDelimBytes, offset); offset += dataDelimBytes.length;
-    body.set(bytes, offset); offset += bytes.length;
-    body.set(closeBytes, offset);
-    // Search for existing file first to update it (avoid duplicates)
-    const searchRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=name%3D%27${encodeURIComponent(filename)}%27+and+trashed%3Dfalse&fields=files(id)`,
-      { headers: { Authorization: `Bearer ${googleAccessToken}` } }
-    );
-    let fileId = null;
-    if (searchRes.ok) {
-      const sj = await searchRes.json();
-      fileId = sj.files?.[0]?.id || null;
-    }
-    let uploadRes;
-    if (fileId) {
-      // Update existing file
-      uploadRes = await fetch(
-        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
-        { method: 'PATCH', headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': mime }, body: blob }
-      );
-    } else {
-      // Create new file
-      uploadRes = await fetch(
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
-        { method: 'POST', headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': `multipart/related; boundary="${boundary}"` }, body: body }
-      );
-    }
-    if (!uploadRes.ok) throw new Error(await uploadRes.text());
-    const uj = await uploadRes.json();
-    const fid = uj.id || fileId;
-    if (!fid) throw new Error('No file id returned');
-    // Make file publicly readable
-    await fetch(`https://www.googleapis.com/drive/v3/files/${fid}/permissions`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${googleAccessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'reader', type: 'anyone' })
-    });
-    // Return a direct-ish thumbnail URL (works without login)
-    return `https://drive.google.com/thumbnail?id=${fid}&sz=w400`;
-  } catch(e) {
-    console.warn('uploadBase64ToDrive:', e);
-    return null;
-  }
+// Resize + compress an image dataURL to max WxH at given JPEG quality (0-1)
+// Returns a new base64 dataURL guaranteed to be small enough for a Sheet cell
+function resizeImageDataUrl(dataUrl, maxPx, quality) {
+  return new Promise(function(resolve) {
+    const img = new Image();
+    img.onload = function() {
+      const ratio = Math.min(maxPx / img.width, maxPx / img.height, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality || 0.75));
+    };
+    img.onerror = function() { resolve(dataUrl); }; // fallback: original
+    img.src = dataUrl;
+  });
 }
 
-async function saveProfilePhotoToDrive(photoUrl) {
-  // Write URL to config sheet B2 (creates headers in A1:B1 too)
+async function saveProfilePhotoToSheet(photoData) {
+  // Writes photoData (URL or compressed base64) to config!B2 in the Sheet.
+  // Also writes headers to A1:B1 on first use.
+  // Returns true on success, false on failure.
   if (!googleAccessToken) return false;
   await ensureFreshToken();
   try {
@@ -994,7 +940,7 @@ async function saveProfilePhotoToDrive(photoUrl) {
         valueInputOption: 'USER_ENTERED',
         data: [
           { range: 'config!A1:B1', values: [['clave', 'valor']] },
-          { range: CONFIG_RANGE,   values: [[photoUrl]] }
+          { range: CONFIG_RANGE,   values: [[photoData]] }
         ]
       })
     });
@@ -1008,10 +954,12 @@ async function saveProfilePhotoToDrive(photoUrl) {
     }
     return true;
   } catch(e) {
-    console.warn('saveProfilePhotoToDrive:', e);
+    console.warn('saveProfilePhotoToSheet:', e);
     return false;
   }
 }
+// Keep old name as alias for any call sites
+const saveProfilePhotoToDrive = saveProfilePhotoToSheet;
 
 function closeProfilePhotoModal() {
   const m = document.getElementById('profile-photo-modal');
@@ -1090,31 +1038,26 @@ async function applyProfilePhoto() {
   if (!url) { showToast('Elegí una imagen primero', true); return; }
   const btn = document.querySelector('#profile-photo-modal button[onclick="applyProfilePhoto()"]');
   if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
-  // Apply immediately to UI (fast feedback)
+  // Apply immediately to UI for fast feedback
   _setProfilePhotoUI(url);
-  let finalUrl = url;
-  let driveOk = false;
+  let sheetOk = false;
   if (googleAccessToken) {
     const isDataUrl = url.startsWith('data:');
     if (isDataUrl) {
-      // Upload image file to Drive and get a shareable URL
-      showToast('Subiendo imagen a Drive...');
-      const driveUrl = await uploadBase64ToDrive(url);
-      if (driveUrl) {
-        finalUrl = driveUrl;
-        _setProfilePhotoUI(driveUrl, true); // update UI + localStorage with Drive URL
-        driveOk = await saveProfilePhotoToDrive(driveUrl);
-      } else {
-        // Fallback: save base64 locally only
-        showToast('⚠ No se pudo subir a Drive, la foto queda solo en este dispositivo', true);
-      }
+      // Compress to max 220px JPEG ~75% quality → typically 15-30KB base64 → fits in a Sheet cell
+      showToast('Comprimiendo imagen...');
+      const compressed = await resizeImageDataUrl(url, 220, 0.75);
+      _setProfilePhotoUI(compressed, true); // update UI + localStorage with compressed version
+      sheetOk = await saveProfilePhotoToSheet(compressed);
     } else {
-      driveOk = await saveProfilePhotoToDrive(url);
+      sheetOk = await saveProfilePhotoToSheet(url);
     }
   }
   closeProfilePhotoModal();
   if (btn) { btn.textContent = 'Guardar'; btn.disabled = false; }
-  showToast(driveOk ? '✓ Foto guardada en Drive (disponible en todos tus dispositivos)' : '✓ Foto guardada localmente');
+  showToast(sheetOk
+    ? '✓ Foto guardada en el Sheet (disponible en todos tus dispositivos)'
+    : '✓ Foto guardada localmente en este dispositivo');
 }
 
 function showToast(msg, isError = false) {
