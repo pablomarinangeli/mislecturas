@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026-10-11-r003</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026-10-11-r004</p>
   </div>
 </div>
 
@@ -140,33 +140,6 @@
         </span>
       </button>
     </div>
-    <!-- Change profile photo modal -->
-    <div id="profile-photo-modal" style="display:none" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xl z-[80] flex items-center justify-center p-6">
-      <div class="bg-white rounded-[40px] shadow-2xl p-10 w-full max-w-sm space-y-6">
-        <div>
-          <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">Foto de perfil</p>
-          <h3 class="text-xl font-black text-slate-800 tracking-tighter">Cambiar imagen</h3>
-        </div>
-        <div class="space-y-3">
-          <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">URL de la imagen</label>
-          <input id="profile-photo-input" type="text" placeholder="https://..." value="https://drive.google.com/thumbnail?id=1nwe2QoXGrmJsIi4uiWyZBFm5bCyznLEC&sz=w400"
-            class="w-full px-4 py-3 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
-          <p class="text-[9px] text-slate-400 font-bold">Pegá cualquier URL de imagen. Para Google Drive usá:<br><span class="text-orange-400">…/thumbnail?id=FILE_ID&sz=w400</span></p>
-          <p class="text-[9px] text-emerald-500 font-bold mt-1">✓ Se guardará en tu Google Sheet (hoja "config") y en este dispositivo</p>
-        </div>
-        <!-- Preview -->
-        <div class="w-full rounded-[20px] overflow-hidden border-2 border-orange-100" style="aspect-ratio:4/3">
-          <img id="profile-photo-preview" src="https://drive.google.com/thumbnail?id=1nwe2QoXGrmJsIi4uiWyZBFm5bCyznLEC&sz=w400"
-            referrerpolicy="no-referrer"
-            class="w-full h-full object-cover object-top"
-            onerror="this.src='https://via.placeholder.com/400x300?text=Vista+previa'"/>
-        </div>
-        <div class="flex gap-3">
-          <button onclick="applyProfilePhoto()" class="flex-1 py-3.5 rounded-[20px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-100 transition-all">Guardar</button>
-          <button onclick="document.getElementById('profile-photo-modal').style.display='none'" class="flex-1 py-3.5 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">Cancelar</button>
-        </div>
-      </div>
-    </div>
     <nav class="flex flex-col gap-3">
       <button data-tab="home" class="sidebar-link flex items-center gap-5 p-5 rounded-[28px] font-black transition-all bg-orange-500 text-white shadow-2xl shadow-orange-100">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -205,10 +178,38 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026-10-11-r003</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026-10-11-r004</p>
       </div>
     </div>
   </aside>
+
+  <!-- Profile photo modal — outside aside so fixed positioning works correctly -->
+  <div id="profile-photo-modal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(15,23,42,0.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:24px">
+    <div class="bg-white rounded-[40px] shadow-2xl p-10 w-full space-y-6" style="max-width:400px">
+      <div>
+        <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">Foto de perfil</p>
+        <h3 class="text-xl font-black text-slate-800 tracking-tighter">Cambiar imagen</h3>
+      </div>
+      <div class="space-y-3">
+        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">URL de la imagen</label>
+        <input id="profile-photo-input" type="text" placeholder="https://..." value="https://drive.google.com/thumbnail?id=1nwe2QoXGrmJsIi4uiWyZBFm5bCyznLEC&sz=w400"
+          class="w-full px-4 py-3 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
+        <p class="text-[9px] text-slate-400 font-bold">Pegá cualquier URL de imagen. Para Google Drive usá:<br><span class="text-orange-400">…/thumbnail?id=FILE_ID&sz=w400</span></p>
+        <p class="text-[9px] text-emerald-500 font-bold mt-1">✓ Se guardará en tu Google Sheet (hoja "config") y en este dispositivo</p>
+      </div>
+      <!-- Preview -->
+      <div class="w-full rounded-[20px] overflow-hidden border-2 border-orange-100" style="aspect-ratio:4/3">
+        <img id="profile-photo-preview" src="https://drive.google.com/thumbnail?id=1nwe2QoXGrmJsIi4uiWyZBFm5bCyznLEC&sz=w400"
+          referrerpolicy="no-referrer"
+          class="w-full h-full object-cover object-top"
+          onerror="this.src='https://via.placeholder.com/400x300?text=Vista+previa'"/>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="applyProfilePhoto()" class="flex-1 py-3.5 rounded-[20px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-100 transition-all">Guardar</button>
+        <button onclick="closeProfilePhotoModal()" class="flex-1 py-3.5 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <main class="flex-1 p-16 max-w-7xl mx-auto w-full">
     <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
@@ -237,7 +238,7 @@
 
     <!-- HOME TAB -->
     <div id="tab-home" class="space-y-20 fade-in">
-      <div id="stat-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6"></div>
+      <div id="stat-cards" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4"></div>
       <div id="fav-sections" class="space-y-20"></div>
       <div id="rank-section" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-8"></div>
       <div id="continent-section"></div>
@@ -816,6 +817,11 @@ async function saveProfilePhotoToDrive(photoUrl) {
   }
 }
 
+function closeProfilePhotoModal() {
+  const m = document.getElementById('profile-photo-modal');
+  if (m) m.style.display = 'none';
+  document.body.style.overflow = '';
+}
 function openChangeProfilePhoto() {
   try {
     const img = document.getElementById('sidebar-profile-img');
@@ -826,7 +832,8 @@ function openChangeProfilePhoto() {
     if (prev && current) prev.src = current;
     if (inp && prev) inp.oninput = () => { prev.src = inp.value; };
   } catch(e) {}
-  document.getElementById('profile-photo-modal').style.display = 'flex';
+  const m = document.getElementById('profile-photo-modal');
+  if (m) { m.style.display = 'flex'; }
   document.body.style.overflow = 'hidden';
 }
 
@@ -840,8 +847,7 @@ async function applyProfilePhoto() {
   // Save to Drive (needs "config" tab in the sheet)
   let driveOk = false;
   if (googleAccessToken) driveOk = await saveProfilePhotoToDrive(url);
-  document.getElementById('profile-photo-modal').style.display = 'none';
-  document.body.style.overflow = '';
+  closeProfilePhotoModal();
   if (btn) { btn.textContent = 'Guardar'; btn.disabled = false; }
   showToast(driveOk ? '✓ Foto guardada en Google Drive' : '✓ Foto guardada localmente');
 }
@@ -1030,11 +1036,11 @@ function renderHome() {
     {label:'Autores favoritos', value:s.favAuthors.length, color:'bg-fuchsia-500', icon:icons.heart},
   ];
   document.getElementById('stat-cards').innerHTML = statData.map(x=>`
-    <div class="bg-white p-7 rounded-[40px] border border-orange-50 shadow-sm flex items-center gap-5 group hover:shadow-xl transition-all">
-      <div class="p-4 rounded-[22px] text-white shadow-xl flex-shrink-0 ${x.color}">${x.icon}</div>
-      <div class="min-w-0">
-        <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-1 truncate">${x.label}</p>
-        <p class="text-3xl font-black text-slate-800 tracking-tighter">${x.value}</p>
+    <div class="bg-white p-5 rounded-[32px] border border-orange-50 shadow-sm flex flex-col gap-3 group hover:shadow-xl transition-all">
+      <div class="p-3 rounded-[18px] text-white shadow-xl self-start ${x.color}">${x.icon}</div>
+      <div>
+        <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest mb-0.5 leading-tight">${x.label}</p>
+        <p class="text-2xl font-black text-slate-800 tracking-tighter">${x.value}</p>
       </div>
     </div>`).join('');
 
