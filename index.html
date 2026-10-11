@@ -100,7 +100,7 @@
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       Conexión segura · Tus datos en tu Drive
     </p>
-    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026-10-11-r004</p>
+    <p class="text-[9px] font-bold text-slate-300 tracking-widest mt-3">v2026-10-11-r005</p>
   </div>
 </div>
 
@@ -178,35 +178,86 @@
         Recargar
       </button>
       <div class="pt-4 border-t border-orange-50">
-        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026-10-11-r004</p>
+        <p class="text-[9px] font-bold text-slate-200 tracking-widest">v2026-10-11-r005</p>
       </div>
     </div>
   </aside>
 
   <!-- Profile photo modal — outside aside so fixed positioning works correctly -->
-  <div id="profile-photo-modal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(15,23,42,0.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:24px">
-    <div class="bg-white rounded-[40px] shadow-2xl p-10 w-full space-y-6" style="max-width:400px">
-      <div>
-        <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">Foto de perfil</p>
-        <h3 class="text-xl font-black text-slate-800 tracking-tighter">Cambiar imagen</h3>
+  <div id="profile-photo-modal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(15,23,42,0.75);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);align-items:center;justify-content:center;padding:24px">
+    <div class="bg-white rounded-[40px] shadow-2xl w-full" style="max-width:420px;max-height:90vh;overflow-y:auto">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-10 pt-10 pb-6">
+        <div>
+          <p class="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-0.5">Foto de perfil</p>
+          <h3 class="text-xl font-black text-slate-800 tracking-tighter">Cambiar imagen</h3>
+        </div>
+        <button onclick="closeProfilePhotoModal()" class="p-2 rounded-full hover:bg-slate-100 text-slate-400 transition-all">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-      <div class="space-y-3">
-        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block">URL de la imagen</label>
-        <input id="profile-photo-input" type="text" placeholder="https://..." value="https://drive.google.com/thumbnail?id=1nwe2QoXGrmJsIi4uiWyZBFm5bCyznLEC&sz=w400"
-          class="w-full px-4 py-3 rounded-[16px] border-2 border-orange-100 focus:border-orange-400 font-bold text-sm text-slate-700 outline-none transition-all"/>
-        <p class="text-[9px] text-slate-400 font-bold">Pegá cualquier URL de imagen. Para Google Drive usá:<br><span class="text-orange-400">…/thumbnail?id=FILE_ID&sz=w400</span></p>
-        <p class="text-[9px] text-emerald-500 font-bold mt-1">✓ Se guardará en tu Google Sheet (hoja "config") y en este dispositivo</p>
-      </div>
-      <!-- Preview -->
-      <div class="w-full rounded-[20px] overflow-hidden border-2 border-orange-100" style="aspect-ratio:4/3">
-        <img id="profile-photo-preview" src="https://drive.google.com/thumbnail?id=1nwe2QoXGrmJsIi4uiWyZBFm5bCyznLEC&sz=w400"
-          referrerpolicy="no-referrer"
-          class="w-full h-full object-cover object-top"
-          onerror="this.src='https://via.placeholder.com/400x300?text=Vista+previa'"/>
-      </div>
-      <div class="flex gap-3">
-        <button onclick="applyProfilePhoto()" class="flex-1 py-3.5 rounded-[20px] bg-orange-500 hover:bg-orange-600 text-white font-black text-sm uppercase tracking-widest shadow-lg shadow-orange-100 transition-all">Guardar</button>
-        <button onclick="closeProfilePhotoModal()" class="flex-1 py-3.5 rounded-[20px] border-2 border-slate-100 font-black text-sm text-slate-400 hover:border-slate-300 transition-all">Cancelar</button>
+
+      <div class="px-10 pb-10 space-y-5">
+        <!-- Drop zone / file picker -->
+        <div id="pp-dropzone"
+          onclick="document.getElementById('pp-file-input').click()"
+          ondragover="event.preventDefault();this.style.borderColor='#f97316';this.style.background='#fff7ed'"
+          ondragleave="this.style.borderColor='';this.style.background=''"
+          ondrop="ppHandleDrop(event)"
+          style="border:2px dashed #fed7aa;border-radius:24px;background:#fffbf7;cursor:pointer;transition:all .2s;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;position:relative">
+          <!-- Preview inside dropzone -->
+          <img id="profile-photo-preview"
+            src=""
+            referrerpolicy="no-referrer"
+            style="display:none;width:100%;height:160px;object-fit:cover;object-position:top;border-radius:16px"
+            onerror="this.style.display='none';document.getElementById('pp-dropzone-placeholder').style.display='flex'"/>
+          <div id="pp-dropzone-placeholder" style="display:flex;flex-direction:column;align-items:center;gap:10px">
+            <div style="width:52px;height:52px;border-radius:50%;background:#fff7ed;display:flex;align-items:center;justify-content:center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            </div>
+            <div style="text-align:center">
+              <p style="font-weight:900;font-size:13px;color:#1e293b">Elegí una foto</p>
+              <p style="font-size:11px;color:#94a3b8;font-weight:700;margin-top:2px">Hacé clic o arrastrá una imagen aquí</p>
+            </div>
+            <span style="font-size:10px;color:#cbd5e1;font-weight:700;background:#f1f5f9;padding:4px 12px;border-radius:20px">JPG, PNG, WEBP</span>
+          </div>
+          <!-- Change overlay when image shown -->
+          <div id="pp-change-overlay" style="display:none;position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.5);border-radius:12px;padding:5px 12px">
+            <span style="color:#fff;font-size:10px;font-weight:900">✎ Cambiar</span>
+          </div>
+        </div>
+        <input id="pp-file-input" type="file" accept="image/*" style="display:none" onchange="ppHandleFile(this.files[0])"/>
+
+        <!-- Divider -->
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="flex:1;height:1px;background:#f1f5f9"></div>
+          <span style="font-size:10px;font-weight:900;color:#cbd5e1;text-transform:uppercase;letter-spacing:.1em">o pegá una URL</span>
+          <div style="flex:1;height:1px;background:#f1f5f9"></div>
+        </div>
+
+        <!-- URL input -->
+        <div style="position:relative">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" style="position:absolute;left:16px;top:50%;transform:translateY(-50%)"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <input id="profile-photo-input" type="text" placeholder="https://..." value=""
+            oninput="ppHandleUrlInput(this.value)"
+            style="width:100%;padding:12px 16px 12px 40px;border-radius:16px;border:2px solid #fed7aa;font-weight:700;font-size:13px;color:#334155;outline:none;transition:border-color .2s;box-sizing:border-box"
+            onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#fed7aa'"/>
+        </div>
+        <p style="font-size:10px;color:#94a3b8;font-weight:700;margin-top:-8px">
+          Para Google Drive: <span style="color:#f97316">…/thumbnail?id=FILE_ID&sz=w400</span>
+        </p>
+
+        <!-- Save note -->
+        <p style="font-size:10px;color:#10b981;font-weight:700;display:flex;align-items:center;gap:6px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          Archivo local: guardado en este dispositivo · URL: guardada también en Drive
+        </p>
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <button id="pp-save-btn" onclick="applyProfilePhoto()" style="flex:1;padding:14px;border-radius:20px;background:#f97316;color:#fff;font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:.1em;border:none;cursor:pointer;transition:background .2s;box-shadow:0 8px 24px rgba(249,115,22,.25)" onmouseover="this.style.background='#ea6c0a'" onmouseout="this.style.background='#f97316'">Guardar</button>
+          <button onclick="closeProfilePhotoModal()" style="flex:1;padding:14px;border-radius:20px;border:2px solid #f1f5f9;background:#fff;color:#94a3b8;font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:.1em;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='#cbd5e1'" onmouseout="this.style.borderColor='#f1f5f9'">Cancelar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -827,26 +878,78 @@ function openChangeProfilePhoto() {
     const img = document.getElementById('sidebar-profile-img');
     const current = img ? img.src : '';
     const inp = document.getElementById('profile-photo-input');
-    if (inp && current) inp.value = current;
     const prev = document.getElementById('profile-photo-preview');
-    if (prev && current) prev.src = current;
-    if (inp && prev) inp.oninput = () => { prev.src = inp.value; };
+    const placeholder = document.getElementById('pp-dropzone-placeholder');
+    const overlay = document.getElementById('pp-change-overlay');
+    if (inp) inp.value = current || '';
+    if (current) {
+      if (prev) { prev.src = current; prev.style.display = 'block'; }
+      if (placeholder) placeholder.style.display = 'none';
+      if (overlay) overlay.style.display = 'flex';
+    } else {
+      if (prev) { prev.src = ''; prev.style.display = 'none'; }
+      if (placeholder) placeholder.style.display = 'flex';
+      if (overlay) overlay.style.display = 'none';
+    }
   } catch(e) {}
   const m = document.getElementById('profile-photo-modal');
   if (m) { m.style.display = 'flex'; }
   document.body.style.overflow = 'hidden';
 }
 
+function ppHandleDrop(event) {
+  event.preventDefault();
+  const dz = document.getElementById('pp-dropzone');
+  if (dz) { dz.style.borderColor = '#e2e8f0'; dz.style.background = '#f8fafc'; }
+  const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) ppHandleFile(file);
+}
+
+function ppHandleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const dataUrl = e.target.result;
+    const prev = document.getElementById('profile-photo-preview');
+    const placeholder = document.getElementById('pp-dropzone-placeholder');
+    const overlay = document.getElementById('pp-change-overlay');
+    if (prev) { prev.src = dataUrl; prev.style.display = 'block'; }
+    if (placeholder) placeholder.style.display = 'none';
+    if (overlay) overlay.style.display = 'flex';
+    // Store dataUrl in the URL input so applyProfilePhoto can find it
+    const inp = document.getElementById('profile-photo-input');
+    if (inp) inp.value = dataUrl;
+  };
+  reader.readAsDataURL(file);
+}
+
+function ppHandleUrlInput(value) {
+  const trimmed = (value || '').trim();
+  const prev = document.getElementById('profile-photo-preview');
+  const placeholder = document.getElementById('pp-dropzone-placeholder');
+  const overlay = document.getElementById('pp-change-overlay');
+  if (trimmed) {
+    if (prev) { prev.src = trimmed; prev.style.display = 'block'; }
+    if (placeholder) placeholder.style.display = 'none';
+    if (overlay) overlay.style.display = 'flex';
+  } else {
+    if (prev) { prev.src = ''; prev.style.display = 'none'; }
+    if (placeholder) placeholder.style.display = 'flex';
+    if (overlay) overlay.style.display = 'none';
+  }
+}
+
 async function applyProfilePhoto() {
   const inp = document.getElementById('profile-photo-input');
   const url = inp ? inp.value.trim() : '';
-  if (!url) return;
+  if (!url) { showToast('Elegí una imagen primero', true); return; }
   const btn = document.querySelector('#profile-photo-modal button[onclick="applyProfilePhoto()"]');
   if (btn) { btn.textContent = 'Guardando...'; btn.disabled = true; }
   _setProfilePhotoUI(url);
-  // Save to Drive (needs "config" tab in the sheet)
+  // base64 data URLs can't be stored in Drive — save locally only
+  const isDataUrl = url.startsWith('data:');
   let driveOk = false;
-  if (googleAccessToken) driveOk = await saveProfilePhotoToDrive(url);
+  if (!isDataUrl && googleAccessToken) driveOk = await saveProfilePhotoToDrive(url);
   closeProfilePhotoModal();
   if (btn) { btn.textContent = 'Guardar'; btn.disabled = false; }
   showToast(driveOk ? '✓ Foto guardada en Google Drive' : '✓ Foto guardada localmente');
